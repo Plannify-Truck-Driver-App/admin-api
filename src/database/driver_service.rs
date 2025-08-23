@@ -38,9 +38,13 @@ impl Database {
             where_conditions.push(format!("lastname ILIKE ${}", param_count));
         }
         
-        if let Some(ref _gender) = filters.gender {
-            param_count += 1;
-            where_conditions.push(format!("gender = ${}", param_count));
+        if let Some(ref gender) = filters.gender {
+            if gender == "none" {
+                where_conditions.push("gender IS NULL".to_string());
+            } else {
+                param_count += 1;
+                where_conditions.push(format!("gender = ${}", param_count));
+            }
         }
         
         if let Some(ref _email) = filters.email {
@@ -123,7 +127,9 @@ impl Database {
                 query = query.bind(format!("%{}%", lastname));
             }
             if let Some(ref gender) = filters.gender {
-                query = query.bind(gender);
+                if gender != "none" {
+                    query = query.bind(gender);
+                }
             }
             if let Some(ref email) = filters.email {
                 query = query.bind(format!("%{}%", email));
@@ -184,7 +190,9 @@ impl Database {
                 query = query.bind(format!("%{}%", lastname));
             }
             if let Some(ref gender) = filters.gender {
-                query = query.bind(gender);
+                if gender != "none" {
+                    query = query.bind(gender);
+                }
             }
             if let Some(ref email) = filters.email {
                 query = query.bind(format!("%{}%", email));

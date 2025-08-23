@@ -172,6 +172,18 @@ mod tests {
         assert_eq!(query_defaults.firstname, None);
         assert_eq!(query_defaults.is_searchable, None);
         assert_eq!(query_defaults.sort_order, "asc"); // default value
+
+        // Test with gender=none filter
+        let query_with_gender_none = serde_json::from_str::<GetAllDriversQuery>(
+            r#"{"page": 1, "limit": 20, "gender": "none"}"#
+        ).unwrap();
+        assert_eq!(query_with_gender_none.gender, Some("none".to_string()));
+
+        // Test with specific gender filter
+        let query_with_gender_m = serde_json::from_str::<GetAllDriversQuery>(
+            r#"{"page": 1, "limit": 20, "gender": "M"}"#
+        ).unwrap();
+        assert_eq!(query_with_gender_m.gender, Some("M".to_string()));
     }
 
     #[test]
