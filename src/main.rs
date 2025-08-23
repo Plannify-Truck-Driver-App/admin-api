@@ -13,8 +13,8 @@ mod handlers;
 mod database;
 mod errors;
 
-use crate::handlers::user_handlers::*;
-use crate::database::user_service::Database;
+use crate::handlers::driver_handlers::*;
+use crate::database::driver_service::Database;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -39,11 +39,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Routes
     let app = Router::new()
         .route("/health", get(health_check))
-        .route("/users", get(get_all_users))
-        .route("/users", post(create_user))
-        .route("/users/{id}", get(get_user_by_id))
-        .route("/users/{id}", put(update_user))
-        .route("/users/{id}", delete(delete_user))
+        .route("/drivers", get(get_all_drivers))
+        .route("/drivers", post(create_driver))
+        .route("/drivers/{id}", get(get_driver_by_id))
+        .route("/drivers/{id}", put(update_driver))
+        .route("/drivers/{id}", delete(delete_driver))
         .layer(cors)
         .with_state(db);
     

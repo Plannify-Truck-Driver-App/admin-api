@@ -1,7 +1,7 @@
 services:
   # Base de données PostgreSQL
   postgres:
-    image: postgres:15-alpine
+    image: postgres:17
     container_name: plannify_postgres
     environment:
       POSTGRES_DB: plannify_db
@@ -22,7 +22,7 @@ services:
 
   # Service pour exécuter les migrations SQLx
   db-migrate:
-    image: postgres:15-alpine
+    image: postgres:17-alpine
     container_name: plannify_migrate
     depends_on:
       postgres:

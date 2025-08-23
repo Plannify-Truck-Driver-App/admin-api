@@ -6,8 +6,8 @@ use serde_json::Value;
 use validator::Validate;
 
 #[derive(Debug, Serialize, Deserialize, FromRow)]
-pub struct User {
-    pub pk_user_id: Uuid,
+pub struct Driver {
+    pub pk_driver_id: Uuid,
     pub firstname: String,
     pub lastname: String,
     pub gender: Option<String>,
@@ -25,7 +25,7 @@ pub struct User {
 }
 
 #[derive(Debug, Deserialize, Validate)]
-pub struct CreateUserRequest {
+pub struct CreateDriverRequest {
     #[validate(length(min = 1, max = 255, message = "Firstname is required and cannot be longer than 255 characters"))]
     pub firstname: String,
     
@@ -53,7 +53,7 @@ pub struct CreateUserRequest {
 }
 
 #[derive(Debug, Deserialize, Validate)]
-pub struct UpdateUserRequest {
+pub struct UpdateDriverRequest {
     #[validate(length(min = 1, max = 255, message = "Firstname cannot be empty and cannot be longer than 255 characters"))]
     pub firstname: Option<String>,
     
@@ -87,13 +87,13 @@ pub struct UpdateUserRequest {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct GetAllUsersQuery {
+pub struct GetAllDriversQuery {
     #[serde(default = "default_page")]
     pub page: u32,
     #[serde(default = "default_limit")]
     pub limit: u32,
     #[serde(default)]
-    pub pk_user_id: Option<String>,
+    pub pk_driver_id: Option<String>,
     #[serde(default)]
     pub firstname: Option<String>,
     #[serde(default)]
@@ -120,12 +120,12 @@ pub struct GetAllUsersQuery {
     pub sort_order: String,
 }
 
-impl Default for GetAllUsersQuery {
+impl Default for GetAllDriversQuery {
     fn default() -> Self {
         Self {
             page: default_page(),
             limit: default_limit(),
-            pk_user_id: None,
+            pk_driver_id: None,
             firstname: None,
             lastname: None,
             gender: None,

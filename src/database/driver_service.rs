@@ -3,7 +3,7 @@ use anyhow::Result;
 use bcrypt::{hash, DEFAULT_COST};
 use uuid::Uuid;
 
-use crate::models::user::{User, UpdateUserRequest, CreateUserRequest, GetAllUsersQuery};
+use crate::models::driver::{Driver, UpdateDriverRequest, CreateDriverRequest, GetAllDriversQuery};
 
 pub struct Database {
     pool: PgPool,
@@ -15,7 +15,7 @@ impl Database {
     }
 
     // Get all users with filters
-    pub async fn get_all_users(&self, filters: &GetAllUsersQuery) -> Result<(Vec<User>, u64)> {
+    pub async fn get_all_drivers(&self, filters: &GetAllDriversQuery) -> Result<(Vec<Driver>, u64)> {
         let offset = (filters.page - 1) * filters.limit;
         
         // Build the WHERE clause and parameters
@@ -23,9 +23,9 @@ impl Database {
         let mut param_count = 0;
         
         // Add filters for each field
-        if let Some(ref _user_id) = filters.pk_user_id {
+        if let Some(ref _driver_id) = filters.pk_driver_id {
             param_count += 1;
-            where_conditions.push(format!("pk_user_id = ${}", param_count));
+            where_conditions.push(format!("pk_driver_id = ${}", param_count));
         }
         
         if let Some(ref _firstname) = filters.firstname {
@@ -102,19 +102,19 @@ impl Database {
         
         // Get total count with filters
         let total_count_query = format!(
-            "SELECT COUNT(*) as count FROM \"user\" {}",
+            "SELECT COUNT(*) as count FROM \"drivers\" {}",
             where_clause
         );
         
-        let total_count = if filters.pk_user_id.is_some() || filters.firstname.is_some() || filters.lastname.is_some() || 
+        let total_count = if filters.pk_driver_id.is_some() || filters.firstname.is_some() || filters.lastname.is_some() || 
                            filters.gender.is_some() || filters.email.is_some() || filters.phone_number.is_some() ||
                            filters.is_searchable.is_some() || filters.allow_request_professional_agreement.is_some() ||
                            filters.language.is_some() {
             // Use dynamic query with parameters
             let mut query = sqlx::query_scalar::<_, i64>(&total_count_query);
             
-            if let Some(ref user_id) = filters.pk_user_id {
-                query = query.bind(user_id);
+            if let Some(ref driver_id) = filters.pk_driver_id {
+                query = query.bind(driver_id);
             }
             if let Some(ref firstname) = filters.firstname {
                 query = query.bind(format!("%{}%", firstname));
@@ -159,7 +159,7 @@ impl Database {
         
         // Build the SELECT query with filters
         let select_query = format!(
-            "SELECT pk_user_id, firstname, lastname, gender, email, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at, verified_at, last_login_at, deactivated_at FROM \"user\" {} ORDER BY created_at {} LIMIT ${} OFFSET ${}",
+            "SELECT pk_driver_id, firstname, lastname, gender, email, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at, verified_at, last_login_at, deactivated_at FROM \"drivers\" {} ORDER BY created_at {} LIMIT ${} OFFSET ${}",
             where_clause,
             order_direction,
             param_count + 1,
@@ -167,15 +167,15 @@ impl Database {
         );
         
         // Get paginated users with filters
-        let users = if filters.pk_user_id.is_some() || filters.firstname.is_some() || filters.lastname.is_some() || 
+        let drivers = if filters.pk_driver_id.is_some() || filters.firstname.is_some() || filters.lastname.is_some() || 
                      filters.gender.is_some() || filters.email.is_some() || filters.phone_number.is_some() ||
                      filters.is_searchable.is_some() || filters.allow_request_professional_agreement.is_some() ||
                      filters.language.is_some() {
             // Use dynamic query with parameters
-            let mut query = sqlx::query_as::<_, User>(&select_query);
+            let mut query = sqlx::query_as::<_, Driver>(&select_query);
             
-            if let Some(ref user_id) = filters.pk_user_id {
-                query = query.bind(user_id);
+            if let Some(ref driver_id) = filters.pk_driver_id {
+                query = query.bind(driver_id);
             }
             if let Some(ref firstname) = filters.firstname {
                 query = query.bind(format!("%{}%", firstname));
@@ -208,42 +208,42 @@ impl Database {
             query.fetch_all(&self.pool).await?
         } else {
             // No filters, use simple query
-            sqlx::query_as::<_, User>(&select_query)
+            sqlx::query_as::<_, Driver>(&select_query)
                 .bind(filters.limit as i64)
                 .bind(offset as i64)
                 .fetch_all(&self.pool)
                 .await?
         };
         
-        Ok((users, total))
+        Ok((drivers, total))
     }
 
     // Get a user by ID
-    pub async fn get_user_by_id(&self, user_id: &Uuid) -> Result<User> {
-        let user = sqlx::query_as!(
-            User,
-            "SELECT pk_user_id, firstname, lastname, gender, email, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at, verified_at, last_login_at, deactivated_at FROM \"user\" WHERE pk_user_id = $1",
-            user_id
+    pub async fn get_driver_by_id(&self, driver_id: &Uuid) -> Result<Driver> {
+        let driver = sqlx::query_as!(
+            Driver,
+            "SELECT pk_driver_id, firstname, lastname, gender, email, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at, verified_at, last_login_at, deactivated_at FROM \"drivers\" WHERE pk_driver_id = $1",
+            driver_id
         )
         .fetch_optional(&self.pool)
         .await?;
 
-        user.ok_or_else(|| anyhow::anyhow!("User not found"))
+        driver.ok_or_else(|| anyhow::anyhow!("Driver not found"))
     }
 
     // Create a new user
-    pub async fn create_user(&self, create_req: &CreateUserRequest) -> Result<User> {
-        let user_id = Uuid::new_v4();
+    pub async fn create_driver(&self, create_req: &CreateDriverRequest) -> Result<Driver> {
+        let driver_id = Uuid::new_v4();
         let password_hash = hash(&create_req.password, DEFAULT_COST)?;
 
-        let user = sqlx::query_as!(
-            User,
+        let driver = sqlx::query_as!(
+            Driver,
             r#"
-            INSERT INTO "user" (pk_user_id, firstname, lastname, gender, email, password_hash, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at)
+            INSERT INTO "drivers" (pk_driver_id, firstname, lastname, gender, email, password_hash, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at)
             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
-            RETURNING pk_user_id, firstname, lastname, gender, email, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at, verified_at, last_login_at, deactivated_at
+            RETURNING pk_driver_id, firstname, lastname, gender, email, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at, verified_at, last_login_at, deactivated_at
             "#,
-            user_id,
+            driver_id,
             create_req.firstname,
             create_req.lastname,
             create_req.gender,
@@ -259,105 +259,105 @@ impl Database {
         .fetch_one(&self.pool)
         .await?;
 
-        Ok(user)
+        Ok(driver)
     }
 
     // Update a user
-    pub async fn update_user(&self, user_id: &Uuid, update_req: &UpdateUserRequest) -> Result<User> {
+    pub async fn update_driver(&self, driver_id: &Uuid, update_req: &UpdateDriverRequest) -> Result<Driver> {
         // Use a simple approach with separate queries for each field
         if let Some(ref firstname) = update_req.firstname {
-            sqlx::query!("UPDATE \"user\" SET firstname = $1 WHERE pk_user_id = $2", firstname, user_id)
+            sqlx::query!("UPDATE \"drivers\" SET firstname = $1 WHERE pk_driver_id = $2", firstname, driver_id)
                 .execute(&self.pool)
                 .await?;
         }
 
         if let Some(ref lastname) = update_req.lastname {
-            sqlx::query!("UPDATE \"user\" SET lastname = $1 WHERE pk_user_id = $2", lastname, user_id)
+            sqlx::query!("UPDATE \"drivers\" SET lastname = $1 WHERE pk_driver_id = $2", lastname, driver_id)
                 .execute(&self.pool)
                 .await?;
         }
 
         if let Some(ref gender) = update_req.gender {
-            sqlx::query!("UPDATE \"user\" SET gender = $1 WHERE pk_user_id = $2", gender, user_id)
+            sqlx::query!("UPDATE \"drivers\" SET gender = $1 WHERE pk_driver_id = $2", gender, driver_id)
                 .execute(&self.pool)
                 .await?;
         }
 
         if let Some(ref email) = update_req.email {
-            sqlx::query!("UPDATE \"user\" SET email = $1 WHERE pk_user_id = $2", email, user_id)
+            sqlx::query!("UPDATE \"drivers\" SET email = $1 WHERE pk_driver_id = $2", email, driver_id)
                 .execute(&self.pool)
                 .await?;
         }
 
         if let Some(ref phone_number) = update_req.phone_number {
-            sqlx::query!("UPDATE \"user\" SET phone_number = $1 WHERE pk_user_id = $2", phone_number, user_id)
+            sqlx::query!("UPDATE \"drivers\" SET phone_number = $1 WHERE pk_driver_id = $2", phone_number, driver_id)
                 .execute(&self.pool)
                 .await?;
         }
 
         if let Some(is_searchable) = update_req.is_searchable {
-            sqlx::query!("UPDATE \"user\" SET is_searchable = $1 WHERE pk_user_id = $2", is_searchable, user_id)
+            sqlx::query!("UPDATE \"drivers\" SET is_searchable = $1 WHERE pk_driver_id = $2", is_searchable, driver_id)
                 .execute(&self.pool)
                 .await?;
         }
 
         if let Some(allow_request_professional_agreement) = update_req.allow_request_professional_agreement {
-            sqlx::query!("UPDATE \"user\" SET allow_request_professional_agreement = $1 WHERE pk_user_id = $2", allow_request_professional_agreement, user_id)
+            sqlx::query!("UPDATE \"drivers\" SET allow_request_professional_agreement = $1 WHERE pk_driver_id = $2", allow_request_professional_agreement, driver_id)
                 .execute(&self.pool)
                 .await?;
         }
 
         if let Some(ref language) = update_req.language {
-            sqlx::query!("UPDATE \"user\" SET language = $1 WHERE pk_user_id = $2", language, user_id)
+            sqlx::query!("UPDATE \"drivers\" SET language = $1 WHERE pk_driver_id = $2", language, driver_id)
                 .execute(&self.pool)
                 .await?;
         }
 
         if let Some(ref rest_json) = update_req.rest_json {
-            sqlx::query!("UPDATE \"user\" SET rest_json = $1 WHERE pk_user_id = $2", rest_json, user_id)
+            sqlx::query!("UPDATE \"drivers\" SET rest_json = $1 WHERE pk_driver_id = $2", rest_json, driver_id)
                 .execute(&self.pool)
                 .await?;
         }
 
         if let Some(mail_preferences) = update_req.mail_preferences {
-            sqlx::query!("UPDATE \"user\" SET mail_preferences = $1 WHERE pk_user_id = $2", mail_preferences, user_id)
+            sqlx::query!("UPDATE \"drivers\" SET mail_preferences = $1 WHERE pk_driver_id = $2", mail_preferences, driver_id)
                 .execute(&self.pool)
                 .await?;
         }
 
         if let Some(verified_at) = update_req.verified_at {
-            sqlx::query!("UPDATE \"user\" SET verified_at = $1 WHERE pk_user_id = $2", verified_at, user_id)
+            sqlx::query!("UPDATE \"drivers\" SET verified_at = $1 WHERE pk_driver_id = $2", verified_at, driver_id)
                 .execute(&self.pool)
                 .await?;
         }
 
         if let Some(last_login_at) = update_req.last_login_at {
-            sqlx::query!("UPDATE \"user\" SET last_login_at = $1 WHERE pk_user_id = $2", last_login_at, user_id)
+            sqlx::query!("UPDATE \"drivers\" SET last_login_at = $1 WHERE pk_driver_id = $2", last_login_at, driver_id)
                 .execute(&self.pool)
                 .await?;
         }
 
         if let Some(deactivated_at) = update_req.deactivated_at {
-            sqlx::query!("UPDATE \"user\" SET deactivated_at = $1 WHERE pk_user_id = $2", deactivated_at, user_id)
+            sqlx::query!("UPDATE \"drivers\" SET deactivated_at = $1 WHERE pk_driver_id = $2", deactivated_at, driver_id)
                 .execute(&self.pool)
                 .await?;
         }
 
         // Get the updated user
-        self.get_user_by_id(user_id).await
+        self.get_driver_by_id(driver_id).await
     }
 
     // Delete a user (soft delete)
-    pub async fn delete_user(&self, user_id: &Uuid) -> Result<()> {
+    pub async fn delete_driver(&self, driver_id: &Uuid) -> Result<()> {
         let result = sqlx::query!(
-            "UPDATE \"user\" SET deactivated_at = NOW() WHERE pk_user_id = $1 AND deactivated_at IS NULL",
-            user_id
+            "UPDATE \"drivers\" SET deactivated_at = NOW() WHERE pk_driver_id = $1 AND deactivated_at IS NULL",
+            driver_id
         )
         .execute(&self.pool)
         .await?;
 
         if result.rows_affected() == 0 {
-            return Err(anyhow::anyhow!("User not found or already deleted"));
+            return Err(anyhow::anyhow!("Driver not found or already deleted"));
         }
 
         Ok(())
@@ -366,7 +366,7 @@ impl Database {
     // Check if an email exists
     pub async fn email_exists(&self, email: &str) -> Result<bool> {
         let count = sqlx::query!(
-            "SELECT COUNT(*) as count FROM \"user\" WHERE email = $1 AND deactivated_at IS NULL",
+            "SELECT COUNT(*) as count FROM \"drivers\" WHERE email = $1 AND deactivated_at IS NULL",
             email
         )
         .fetch_one(&self.pool)
@@ -376,11 +376,11 @@ impl Database {
     }
 
     // Check if an email exists for another user
-    pub async fn email_exists_except_user(&self, email: &str, user_id: &Uuid) -> Result<bool> {
+    pub async fn email_exists_except_driver(&self, email: &str, driver_id: &Uuid) -> Result<bool> {
         let count = sqlx::query!(
-            "SELECT COUNT(*) as count FROM \"user\" WHERE email = $1 AND pk_user_id != $2 AND deactivated_at IS NULL",
+            "SELECT COUNT(*) as count FROM \"drivers\" WHERE email = $1 AND pk_driver_id != $2 AND deactivated_at IS NULL",
             email,
-            user_id
+            driver_id
         )
         .fetch_one(&self.pool)
         .await?;

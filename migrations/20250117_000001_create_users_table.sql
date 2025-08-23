@@ -1,6 +1,6 @@
 -- Migration: Create users table
-CREATE TABLE IF NOT EXISTS public."user" (
-    pk_user_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+CREATE TABLE IF NOT EXISTS public."drivers" (
+    pk_driver_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     firstname VARCHAR(255) NOT NULL,
     lastname VARCHAR(255) NOT NULL,
     gender VARCHAR(1),
