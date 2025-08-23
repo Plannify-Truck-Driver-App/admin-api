@@ -1,0 +1,65 @@
+services:
+  # Base de données PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: plannify_postgres
+    environment:
+      POSTGRES_DB: plannify_db
+      POSTGRES_USER: plannify_user
+      POSTGRES_PASSWORD: plannify_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - plannify_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U plannify_user -d plannify_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Service pour exécuter les migrations SQLx
+  db-migrate:
+    image: postgres:15-alpine
+    container_name: plannify_migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://plannify_user:plannify_password@postgres:5432/plannify_db
+      PGPASSWORD: plannify_password
+    volumes:
+      - ./migrations:/migrations:ro
+      - ./scripts/migrate-docker.sh:/migrate-docker.sh:ro
+    working_dir: /migrations
+    entrypoint: ["/bin/sh", "-c", "/migrate-docker.sh up"]
+    networks:
+      - plannify_network
+    restart: "no"
+
+  # API Rust
+  # api:
+  #   build: .
+  #   container_name: plannify_api
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     DATABASE_URL: postgresql://plannify_user:plannify_password@postgres:5432/plannify_db
+  #     RUST_LOG: info
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     db-migrate:
+  #       condition: service_completed_successfully
+  #   networks:
+  #     - plannify_network
+  #   restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  plannify_network:
+    driver: bridge
