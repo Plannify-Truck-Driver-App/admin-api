@@ -16,12 +16,15 @@ pub enum AppError {
     
     #[error("Conflict: {0} (Code: {1})")]
     Conflict(String, String),
+
+    #[error("Not found: {0}")]
+    NotFound(String),
     
     #[error("Validation error: {0}")]
     Validation(String),
     
     #[error("Internal server error")]
-    Internal,
+    Internal(String),
 }
 
 impl IntoResponse for AppError {
@@ -30,8 +33,9 @@ impl IntoResponse for AppError {
             AppError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Database error"),
             AppError::Serialization(_) => (StatusCode::BAD_REQUEST, "Data format error"),
             AppError::Conflict(ref message, ref _error_code) => (StatusCode::CONFLICT, message.as_str()),
+            AppError::NotFound(ref message) => (StatusCode::NOT_FOUND, message.as_str()),
             AppError::Validation(ref message) => (StatusCode::BAD_REQUEST, message.as_str()),
-            AppError::Internal => (StatusCode::INTERNAL_SERVER_ERROR, "Internal server error"),
+            AppError::Internal(ref message) => (StatusCode::INTERNAL_SERVER_ERROR, message.as_str()),
         };
 
         let body = match self {
@@ -56,6 +60,6 @@ impl IntoResponse for AppError {
 
 impl From<anyhow::Error> for AppError {
     fn from(_err: anyhow::Error) -> Self {
-        AppError::Internal
+        AppError::Internal("Internal server error".to_string())
     }
 }

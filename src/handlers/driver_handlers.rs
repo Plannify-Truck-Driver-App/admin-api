@@ -102,7 +102,7 @@ pub async fn update_driver(
     Ok(Json(updated_driver))
 }
 
-pub async fn delete_driver(
+pub async fn deactivate_driver(
     Path(driver_id): Path<String>,
     State(db): State<Arc<Database>>,
 ) -> Result<StatusCode, AppError> {
@@ -112,7 +112,7 @@ pub async fn delete_driver(
     // Check if the user exists
     let _existing_driver = db.get_driver_by_id(&driver_uuid).await?;
     
-    db.delete_driver(&driver_uuid).await?;
+    db.deactivate_driver(&driver_uuid).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 

@@ -1,9 +1,8 @@
 use sqlx::PgPool;
-use anyhow::Result;
 use bcrypt::{hash, DEFAULT_COST};
 use uuid::Uuid;
 
-use crate::models::driver::{Driver, UpdateDriverRequest, CreateDriverRequest, GetAllDriversQuery};
+use crate::{errors::app_error::AppError, models::driver::{CreateDriverRequest, Driver, GetAllDriversQuery, UpdateDriverRequest}};
 
 pub struct Database {
     pool: PgPool,
@@ -15,7 +14,7 @@ impl Database {
     }
 
     // Get all users with filters
-    pub async fn get_all_drivers(&self, filters: &GetAllDriversQuery) -> Result<(Vec<Driver>, u64)> {
+    pub async fn get_all_drivers(&self, filters: &GetAllDriversQuery) -> Result<(Vec<Driver>, u64), AppError> {
         let offset = (filters.page - 1) * filters.limit;
         
         // Build the WHERE clause and parameters
@@ -227,22 +226,27 @@ impl Database {
     }
 
     // Get a user by ID
-    pub async fn get_driver_by_id(&self, driver_id: &Uuid) -> Result<Driver> {
+    pub async fn get_driver_by_id(&self, driver_id: &Uuid) -> Result<Driver, AppError> {
         let driver = sqlx::query_as!(
             Driver,
             "SELECT pk_driver_id, firstname, lastname, gender, email, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at, verified_at, last_login_at, deactivated_at FROM \"drivers\" WHERE pk_driver_id = $1",
             driver_id
         )
         .fetch_optional(&self.pool)
-        .await?;
+        .await;
 
-        driver.ok_or_else(|| anyhow::anyhow!("Driver not found"))
+        match driver {
+            Ok(Some(driver)) => Ok(driver),
+            Ok(None) => Err(AppError::NotFound("Driver not found".to_string())),
+            Err(e) => Err(e.into())
+        }
     }
 
     // Create a new user
-    pub async fn create_driver(&self, create_req: &CreateDriverRequest) -> Result<Driver> {
+    pub async fn create_driver(&self, create_req: &CreateDriverRequest) -> Result<Driver, AppError> {
         let driver_id = Uuid::new_v4();
-        let password_hash = hash(&create_req.password, DEFAULT_COST)?;
+        let password_hash = hash(&create_req.password, DEFAULT_COST)
+            .map_err(|_| AppError::Internal("Failed to hash password".to_string()))?;
 
         let driver = sqlx::query_as!(
             Driver,
@@ -271,7 +275,7 @@ impl Database {
     }
 
     // Update a user
-    pub async fn update_driver(&self, driver_id: &Uuid, update_req: &UpdateDriverRequest) -> Result<Driver> {
+    pub async fn update_driver(&self, driver_id: &Uuid, update_req: &UpdateDriverRequest) -> Result<Driver, AppError> {
         // Use a simple approach with separate queries for each field
         if let Some(ref firstname) = update_req.firstname {
             sqlx::query!("UPDATE \"drivers\" SET firstname = $1 WHERE pk_driver_id = $2", firstname, driver_id)
@@ -355,8 +359,13 @@ impl Database {
         self.get_driver_by_id(driver_id).await
     }
 
-    // Delete a user (soft delete)
-    pub async fn delete_driver(&self, driver_id: &Uuid) -> Result<()> {
+    // Deactivate a user (soft delete)
+    pub async fn deactivate_driver(&self, driver_id: &Uuid) -> Result<(), AppError> {
+        let driver = self.get_driver_by_id(driver_id).await?;
+        if driver.deactivated_at.is_some() {
+            return Err(AppError::NotFound("Driver has already been deactivated".to_string()));
+        }
+
         let result = sqlx::query!(
             "UPDATE \"drivers\" SET deactivated_at = NOW() WHERE pk_driver_id = $1 AND deactivated_at IS NULL",
             driver_id
@@ -365,14 +374,14 @@ impl Database {
         .await?;
 
         if result.rows_affected() == 0 {
-            return Err(anyhow::anyhow!("Driver not found or already deleted"));
+            return Err(AppError::NotFound("Driver not found".to_string()));
         }
 
         Ok(())
     }
 
     // Check if an email exists
-    pub async fn email_exists(&self, email: &str) -> Result<bool> {
+    pub async fn email_exists(&self, email: &str) -> Result<bool, AppError> {
         let count = sqlx::query!(
             "SELECT COUNT(*) as count FROM \"drivers\" WHERE email = $1 AND deactivated_at IS NULL",
             email
@@ -384,7 +393,7 @@ impl Database {
     }
 
     // Check if an email exists for another user
-    pub async fn email_exists_except_driver(&self, email: &str, driver_id: &Uuid) -> Result<bool> {
+    pub async fn email_exists_except_driver(&self, email: &str, driver_id: &Uuid) -> Result<bool, AppError> {
         let count = sqlx::query!(
             "SELECT COUNT(*) as count FROM \"drivers\" WHERE email = $1 AND pk_driver_id != $2 AND deactivated_at IS NULL",
             email,

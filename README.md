@@ -1,213 +1,226 @@
 # Plannify Admin API
 
-Une API REST moderne construite avec Rust et Axum pour la gestion des utilisateurs, entièrement conteneurisée avec Docker.
+API d'administration pour la plateforme Plannify, permettant la gestion des employés, des chauffeurs et des autorisations.
 
-## 🚀 Démarrage rapide
+## 🚀 Fonctionnalités
 
-### Prérequis
-- Docker et Docker Compose installés
-- Git
+- **Authentification JWT** : Système de connexion sécurisé pour les employés
+- **Gestion des employés** : Création et authentification des comptes employés
+- **Gestion des chauffeurs** : CRUD complet pour les chauffeurs
+- **Système de permissions** : Gestion fine des autorisations par niveau d'employé
+- **API REST** : Interface HTTP complète avec validation des données
+
+## 🏗️ Architecture
+
+- **Backend** : Rust avec Axum
+- **Base de données** : PostgreSQL avec SQLx
+- **Authentification** : JWT avec bcrypt pour le hachage des mots de passe
+- **Validation** : Validation des données avec le crate `validator`
+- **Conteneurisation** : Docker et Docker Compose
+
+## 📋 Prérequis
+
+- Rust 1.70+
+- Docker et Docker Compose
+- PostgreSQL 15+
+
+## 🛠️ Installation
 
 ### 1. Cloner le projet
+
 ```bash
 git clone <repository-url>
-cd plannify-admin-api
+cd plannify-admin/api
 ```
 
-### 2. Démarrer l'API complète
+### 2. Configuration des variables d'environnement
+
+Créez un fichier `.env` à la racine du projet :
+
 ```bash
-# Démarrer tous les services (PostgreSQL + API)
-docker-compose up -d
-
-# Ou démarrer uniquement la base de données
-docker-compose up -d postgres
+DATABASE_URL=postgresql://username:password@localhost:5432/plannify_admin
+JWT_SECRET=your-super-secret-jwt-key-change-in-production
 ```
 
-### 3. Initialiser la base de données
+### 3. Démarrage avec Docker (Recommandé)
+
 ```bash
-# Initialiser la base de données (se lance automatiquement)
-docker-compose up db-init
+# Démarrer l'API et PostgreSQL
+./scripts/start-api.sh
+
+# Ou manuellement
+docker-compose up --build -d
 ```
 
-### 4. Démarrer l'API
+### 4. Démarrage en local
+
 ```bash
-# Mode production
-docker-compose up api
+# Installer les dépendances
+cargo install sqlx-cli
 
-# Mode développement avec rechargement automatique
-docker-compose up dev
+# Créer la base de données
+sqlx database create
 
-# Mode test
-docker-compose up test
+# Exécuter les migrations
+sqlx migrate run
+
+# Démarrer l'API
+cargo run
 ```
 
-## 📚 Services disponibles
+## 🗄️ Base de données
 
-| Service | Port | Description | Commande |
-|---------|------|-------------|----------|
-| `postgres` | 5432 | Base de données PostgreSQL | `docker-compose up postgres` |
-| `db-init` | - | Initialisation de la base de données | `docker-compose up db-init` |
-| `api` | 3000 | API Rust en mode production | `docker-compose up api` |
-| `dev` | 3000 | API Rust avec rechargement automatique | `docker-compose up dev` |
-| `test` | - | Exécution des tests | `docker-compose up test` |
+### Tables principales
 
-## 🔧 Commandes utiles
+- **employees** : Comptes employés avec informations personnelles et professionnelles
+- **employee_levels** : Niveaux hiérarchiques des employés
+- **employee_authorizations** : Permissions disponibles dans le système
+- **employee_accreditation_authorizations** : Attribution des permissions aux employés
+- **drivers** : Informations sur les chauffeurs
 
-### Gestion des services
+### Migrations
+
+Les migrations sont gérées avec SQLx CLI :
+
 ```bash
-# Démarrer tous les services
-docker-compose up -d
+# Créer une nouvelle migration
+sqlx migrate add nom_de_la_migration
 
-# Démarrer un service spécifique
-docker-compose up -d postgres
+# Exécuter les migrations
+sqlx migrate run
 
-# Arrêter tous les services
-docker-compose down
-
-# Voir les logs
-docker-compose logs -f api
-docker-compose logs -f postgres
-
-# Voir le statut
-docker-compose ps
+# Annuler la dernière migration
+sqlx migrate revert
 ```
 
-### Base de données
+## 🔐 Authentification
+
+### Création d'un compte employé
+
 ```bash
-# Initialiser la base de données
-docker-compose up db-init
-
-# Se connecter à la base de données
-docker-compose exec postgres psql -U plannify_user -d plannify_db
-
-# Réinitialiser complètement
-docker-compose down
-docker volume rm plannify-admin-api_postgres_data
-docker-compose up -d postgres
-docker-compose up db-init
+curl -X POST http://localhost:3000/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "firstname": "Jean",
+    "lastname": "Dupont",
+    "professional_email": "jean.dupont@company.com",
+    "login_password": "motdepasse123",
+    "personal_email": "jean.dupont@personal.com",
+    "professional_email_password": "emailpass123"
+  }'
 ```
 
-### Développement
+### Connexion
+
 ```bash
-# Mode développement avec rechargement automatique
-docker-compose up dev
-
-# Exécuter les tests
-docker-compose up test
-
-# Construire l'image
-docker-compose build
+curl -X POST http://localhost:3000/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "professional_email": "jean.dupont@company.com",
+    "password": "motdepasse123"
+  }'
 ```
 
-## 📊 Endpoints de l'API
+### Utilisation du token JWT
 
-Une fois l'API démarrée, elle sera accessible sur `http://localhost:3000` :
+```bash
+TOKEN="your-jwt-token-here"
+curl -H "Authorization: Bearer $TOKEN" \
+     http://localhost:3000/drivers
+```
 
-| Méthode | Endpoint | Description |
-|---------|----------|-------------|
-| `GET` | `/health` | Vérification de l'état de l'API |
-| `GET` | `/users` | Récupérer tous les utilisateurs |
-| `POST` | `/users` | Créer un nouvel utilisateur |
-| `GET` | `/users/:id` | Récupérer un utilisateur par ID |
-| `PUT` | `/users/:id` | Mettre à jour un utilisateur |
-| `DELETE` | `/users/:id` | Supprimer un utilisateur (soft delete) |
+## 📚 Documentation API
+
+- [Guide d'authentification](docs/AUTH_API_USAGE.md)
+- [Guide des chauffeurs](docs/DRIVERS_API_USAGE.md)
+- [Guide des migrations](docs/MIGRATIONS.md)
 
 ## 🧪 Tests
 
-```bash
-# Exécuter tous les tests
-docker-compose up test
-
-# Tests avec logs détaillés
-docker-compose run --rm test cargo test -- --nocapture
-```
-
-## 🔍 Logs et monitoring
+### Tests de l'API d'authentification
 
 ```bash
-# Logs de l'API
-docker-compose logs -f api
-
-# Logs de PostgreSQL
-docker-compose logs -f postgres
-
-# Logs de tous les services
-docker-compose logs -f
+./test_auth_api.sh
 ```
+
+### Tests des chauffeurs
+
+```bash
+./test_drivers_api.sh
+```
+
+## 🔧 Développement
+
+### Structure du projet
+
+```
+src/
+├── main.rs              # Point d'entrée de l'application
+├── models/              # Modèles de données
+│   ├── employee.rs      # Modèle employé
+│   ├── driver.rs        # Modèle chauffeur
+│   └── jwt.rs           # Modèles JWT
+├── handlers/            # Gestionnaires des requêtes HTTP
+│   ├── auth_handlers.rs # Gestionnaires d'authentification
+│   └── driver_handlers.rs # Gestionnaires des chauffeurs
+├── database/            # Services de base de données
+│   ├── auth_service.rs  # Service d'authentification
+│   └── driver_service.rs # Service des chauffeurs
+├── middleware/          # Middleware HTTP
+│   └── auth.rs          # Middleware d'authentification
+└── errors/              # Gestion des erreurs
+    └── app_error.rs     # Types d'erreurs de l'application
+```
+
+### Ajout de nouvelles fonctionnalités
+
+1. **Modèles** : Créer les structures dans `src/models/`
+2. **Services** : Implémenter la logique métier dans `src/database/`
+3. **Handlers** : Créer les endpoints HTTP dans `src/handlers/`
+4. **Migrations** : Ajouter les tables nécessaires
+5. **Tests** : Créer des scripts de test
 
 ## 🚀 Déploiement
 
-### Build de production
+### Production
+
+1. **Variables d'environnement** : Configurez `JWT_SECRET` avec une clé forte
+2. **Base de données** : Utilisez une instance PostgreSQL gérée
+3. **HTTPS** : Configurez un reverse proxy avec SSL/TLS
+4. **Monitoring** : Ajoutez des métriques et des logs structurés
+
+### Docker
+
 ```bash
-# Construire l'image
-docker-compose build api
+# Build de l'image
+docker build -t plannify-admin-api .
 
-# Démarrer en production
-docker-compose up -d api
-```
-
-### Variables d'environnement
-Les variables d'environnement sont configurées dans le `docker-compose.yml` :
-
-- `DATABASE_URL` : Connexion à PostgreSQL
-- `RUST_LOG` : Niveau de logging (info, debug, trace)
-
-## 🐛 Dépannage
-
-### Problèmes courants
-
-1. **Port déjà utilisé**
-   ```bash
-   # Vérifier les ports utilisés
-   lsof -i :3000
-   lsof -i :5432
-   ```
-
-2. **Base de données non accessible**
-   ```bash
-   # Vérifier le statut
-   docker-compose ps
-   
-   # Voir les logs
-   docker-compose logs postgres
-   ```
-
-3. **Erreur de compilation**
-   ```bash
-   # Reconstruire l'image
-   docker-compose build --no-cache
-   ```
-
-### Réinitialisation complète
-```bash
-# Arrêter et nettoyer tout
-docker-compose down -v
-docker system prune -f
-
-# Redémarrer depuis zéro
-docker-compose up -d postgres
-docker-compose up db-init
-docker-compose up api
-```
-
-## 📁 Structure du projet
-
-```
-plannify-admin-api/
-├── src/                    # Code source Rust
-├── database/              # Scripts SQL
-├── docker-compose.yml     # Configuration Docker
-├── Dockerfile             # Image Docker
-└── README.md              # Ce fichier
+# Exécution
+docker run -p 3000:3000 \
+  -e DATABASE_URL=your-db-url \
+  -e JWT_SECRET=your-secret \
+  plannify-admin-api
 ```
 
 ## 🤝 Contribution
 
 1. Fork le projet
-2. Créer une branche feature
-3. Tester avec Docker Compose
-4. Soumettre une pull request
+2. Créez une branche feature (`git checkout -b feature/AmazingFeature`)
+3. Committez vos changements (`git commit -m 'Add some AmazingFeature'`)
+4. Push vers la branche (`git push origin feature/AmazingFeature`)
+5. Ouvrez une Pull Request
 
 ## 📄 Licence
 
-Ce projet est sous licence MIT.
+Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+
+## 🆘 Support
+
+Pour toute question ou problème :
+- Consultez la documentation dans le dossier `docs/`
+- Vérifiez les logs de l'application
+- Ouvrez une issue sur le repository
+
+---
+
+**Note** : Ce projet est en développement actif. L'API peut évoluer et certaines fonctionnalités peuvent ne pas être encore implémentées.
