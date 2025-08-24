@@ -19,7 +19,7 @@ pub async fn require_permissions(
     let auth_state = request
         .extensions()
         .get::<AuthState>()
-        .ok_or_else(|| AppError::Validation("Authentification requise".to_string()))?;
+        .ok_or_else(|| AppError::Validation("Authentication required".to_string()))?;
 
     // check if the employee has all the required permissions
     let has_all_permissions = required_permissions
