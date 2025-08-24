@@ -14,7 +14,6 @@ use crate::{
 };
 use validator::Validate;
 
-// Simple validation function using the Validate trait
 fn validate_request<T: Validate>(req: &T) -> Result<(), AppError> {
     req.validate()
         .map_err(|e| AppError::Validation(format!("The request content is not valid: {}", e)))
@@ -40,7 +39,7 @@ pub async fn register(
     State((_db, auth_service)): State<(Arc<Database>, Arc<AuthService>)>,
     Json(employee_data): Json<EmployeeCreate>,
 ) -> Result<Json<Employee>, AppError> {
-    // Validate the request content
+    // validate the request content
     validate_request(&employee_data)?;
     
     let employee = auth_service.create_employee(&employee_data).await?;

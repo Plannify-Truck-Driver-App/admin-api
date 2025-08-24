@@ -40,7 +40,7 @@ impl AuthService {
     }
 
     pub async fn login(&self, login: &EmployeeLoginRequest) -> Result<AuthResponse, AppError> {
-        // Récupérer l'employé par email professionnel
+        // get employee by professional email
         let employee = sqlx::query_as!(
             Employee,
             r#"
@@ -57,16 +57,16 @@ impl AuthService {
         .await?
         .ok_or(AppError::Validation("Invalid email or password".to_string()))?;
 
-        // Vérifier le mot de passe
+        // check password
         if !verify(&login.password, &employee.login_password_hash)
             .map_err(|_| AppError::Internal("Invalid email or password".to_string()))? {
             return Err(AppError::Validation("Invalid email or password".to_string()));
         }
         
-        // Récupérer les permissions de l'employé
+        // get employee permissions
         let permissions = self.get_employee_permissions(employee.pk_employee_id).await?;
         
-        // Mettre à jour la dernière connexion
+        // update last login
         sqlx::query!(
             "UPDATE employees SET last_login_at = $1 WHERE pk_employee_id = $2",
             Utc::now(),
@@ -75,7 +75,7 @@ impl AuthService {
         .execute(&self.pool)
         .await?;
         
-        // Générer les tokens JWT
+        // generate JWT tokens
         let access_token = self.generate_access_token(&employee, &permissions)?;
         let refresh_token = self.generate_refresh_token(&employee)?;
         
@@ -87,7 +87,7 @@ impl AuthService {
     }
 
     pub async fn refresh_token(&self, refresh_req: &RefreshTokenRequest) -> Result<AuthResponse, AppError> {
-        // Décoder et valider le refresh token
+        // decode and validate refresh token
         let token_data = jsonwebtoken::decode::<RefreshClaims>(
             &refresh_req.refresh_token,
             &jsonwebtoken::DecodingKey::from_secret(self.jwt_secret.as_ref()),
@@ -97,12 +97,12 @@ impl AuthService {
 
         let claims = token_data.claims;
 
-        // Vérifier si le token a expiré
+        // check if the token has expired
         if claims.is_expired() {
             return Err(AppError::Validation("Refresh token expiré".to_string()));
         }
 
-        // Vérifier que l'employé existe toujours et est actif
+        // check if the employee exists and is active
         let employee = sqlx::query_as!(
             Employee,
             r#"
@@ -119,10 +119,10 @@ impl AuthService {
         .await?
         .ok_or(AppError::Validation("Employé non trouvé ou désactivé".to_string()))?;
 
-        // Récupérer les permissions de l'employé
+        // get employee permissions
         let permissions = self.get_employee_permissions(employee.pk_employee_id).await?;
         
-        // Générer un nouveau access token
+        // generate new access token
         let access_token = self.generate_access_token(&employee, &permissions)?;
         let refresh_token = self.generate_refresh_token(&employee)?;
         
@@ -195,7 +195,7 @@ impl AuthService {
     }
     
     pub async fn create_employee(&self, employee_data: &EmployeeCreate) -> Result<Employee, AppError> {
-        // Vérifier que l'email professionnel n'existe pas déjà
+        // check if the professional email already exists
         let existing = sqlx::query!(
             "SELECT pk_employee_id FROM employees WHERE professional_email = $1",
             employee_data.professional_email
@@ -207,11 +207,11 @@ impl AuthService {
             return Err(AppError::Conflict("Un employé avec cet email professionnel existe déjà".to_string(), "EMAIL_EXISTS".to_string()));
         }
         
-        // Hasher le mot de passe
+        // hash password
         let password_hash = hash(employee_data.login_password.as_bytes(), DEFAULT_COST)
             .map_err(|_| AppError::Internal("An error occurred while hashing the password".to_string()))?;
         
-        // Insérer l'employé
+        // insert employee
         let employee = sqlx::query_as!(
             Employee,
             r#"

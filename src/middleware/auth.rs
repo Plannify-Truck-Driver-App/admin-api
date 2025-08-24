@@ -25,7 +25,7 @@ pub async fn auth_middleware(
     mut request: Request,
     next: Next,
 ) -> Result<Response, AppError> {
-    // Extraire le token du header Authorization
+    // extract token from Authorization header
     let auth_header = request
         .headers()
         .get(header::AUTHORIZATION)
@@ -33,40 +33,40 @@ pub async fn auth_middleware(
         .and_then(|auth_str| auth_str.strip_prefix("Bearer "));
 
     let token = auth_header
-        .ok_or_else(|| AppError::Validation("Token d'authentification manquant".to_string()))?;
+        .ok_or_else(|| AppError::Validation("Authentication token missing".to_string()))?;
 
-    // Décoder et valider le token JWT
+    // decode and validate JWT token
     let token_data = decode::<Claims>(
         token,
         &DecodingKey::from_secret(jwt_secret.as_ref()),
         &Validation::default(),
     )
-    .map_err(|_| AppError::Validation("Token JWT invalide".to_string()))?;
+    .map_err(|_| AppError::Validation("Invalid JWT token".to_string()))?;
 
     let claims = token_data.claims;
 
-    // Vérifier si le token a expiré
+    // check if the token has expired
     if claims.is_expired() {
-        return Err(AppError::Validation("Token JWT expiré".to_string()));
+        return Err(AppError::Validation("JWT token expired".to_string()));
     }
 
-    // Vérifier que l'employé existe toujours et est actif
+    // check if the employee exists and is active
     let employee = sqlx::query!(
         "SELECT pk_employee_id FROM employees WHERE pk_employee_id = $1 AND deactivated_at IS NULL",
         claims.sub
     )
     .fetch_optional(&pool)
     .await?
-    .ok_or_else(|| AppError::Validation("Employé non trouvé ou désactivé".to_string()))?;
+    .ok_or_else(|| AppError::Validation("Employee not found or deactivated".to_string()))?;
 
-    // Créer l'état d'authentification
+    // create auth state
     let auth_state = AuthState {
         employee_id: employee.pk_employee_id,
         email: claims.email,
         permissions: claims.permissions,
     };
 
-    // Ajouter l'état d'authentification à la requête
+    // add auth state to request
     request.extensions_mut().insert(auth_state);
 
     Ok(next.run(request).await)

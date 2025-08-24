@@ -40,7 +40,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pool = PgPool::connect(&database_url).await?;
     let db = Arc::new(Database::new(pool.clone()));
     
-    // JWT secret (en production, utilisez une variable d'environnement sécurisée)
     let jwt_secret = std::env::var("JWT_SECRET")
         .expect("JWT_SECRET must be defined");
     
@@ -51,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // CORS configuration
     let cors = CorsLayer::permissive();
     
-    // Routes publiques (sans authentification)
+    // public routes (no auth)
     let public_routes = Router::new()
         .route("/health", get(health_check))
         .route("/auth/login", post(login))
@@ -59,8 +58,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/auth/register", post(register))
         .with_state((db.clone(), auth_service.clone()));
     
-    // Routes protégées avec vérification des permissions granulaires des chauffeurs
-    // Utilisation du nouveau système de permissions configuré
     let protected_driver_routes = Router::new()
         .route("/drivers", get(get_all_drivers))
         .route("/drivers", post(create_driver))
@@ -68,17 +65,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/drivers/{id}", put(update_driver))
         .route("/drivers/{id}", delete(deactivate_driver))
         .route_layer(axum_middleware::from_fn(|req: axum::extract::Request, next: axum::middleware::Next| {
-            // Récupérer la méthode et le chemin pour déterminer les permissions requises
             let method = req.method().as_str();
             let path = req.uri().path();
             
             let required_permissions = match (method, path) {
-                ("GET", "/drivers") => vec![1],           // Liste des chauffeurs
-                ("POST", "/drivers") => vec![2],          // Créer un chauffeur
-                ("GET", path) if path.starts_with("/drivers/") => vec![1], // Lire un chauffeur
-                ("PUT", path) if path.starts_with("/drivers/") => vec![3], // Modifier un chauffeur
-                ("DELETE", path) if path.starts_with("/drivers/") => vec![4], // Désactiver un chauffeur
-                _ => vec![], // Aucune permission requise (ne devrait pas arriver)
+                ("GET", "/drivers") => vec![1],           // drivers list
+                ("POST", "/drivers") => vec![2],          // create driver
+                ("GET", path) if path.starts_with("/drivers/") => vec![1], // read driver
+                ("PUT", path) if path.starts_with("/drivers/") => vec![3], // update driver
+                ("DELETE", path) if path.starts_with("/drivers/") => vec![4], // deactivate driver
+                _ => vec![], // no permission required (should not happen)
             };
             
             require_permissions(required_permissions, req, next)
@@ -89,7 +85,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ))
         .with_state(db.clone());
     
-    // Application principale
+    // main app
     let app = Router::new()
         .merge(public_routes)
         .merge(protected_driver_routes)

@@ -367,7 +367,7 @@ impl Database {
         }
 
         let result = sqlx::query!(
-            "UPDATE \"drivers\" SET deactivated_at = NOW() WHERE pk_driver_id = $1 AND deactivated_at IS NULL",
+            "UPDATE \"drivers\" SET deactivated_at = NOW() WHERE pk_driver_id = $1",
             driver_id
         )
         .execute(&self.pool)
@@ -383,7 +383,7 @@ impl Database {
     // Check if an email exists
     pub async fn email_exists(&self, email: &str) -> Result<bool, AppError> {
         let count = sqlx::query!(
-            "SELECT COUNT(*) as count FROM \"drivers\" WHERE email = $1 AND deactivated_at IS NULL",
+            "SELECT COUNT(*) as count FROM \"drivers\" WHERE email = $1",
             email
         )
         .fetch_one(&self.pool)
@@ -395,7 +395,7 @@ impl Database {
     // Check if an email exists for another user
     pub async fn email_exists_except_driver(&self, email: &str, driver_id: &Uuid) -> Result<bool, AppError> {
         let count = sqlx::query!(
-            "SELECT COUNT(*) as count FROM \"drivers\" WHERE email = $1 AND pk_driver_id != $2 AND deactivated_at IS NULL",
+            "SELECT COUNT(*) as count FROM \"drivers\" WHERE email = $1 AND pk_driver_id != $2",
             email,
             driver_id
         )
@@ -404,59 +404,4 @@ impl Database {
 
         Ok(count.count.unwrap_or(0) > 0)
     }
-
-    // Authenticate a user by email and password
-    // pub async fn authenticate_user(&self, email: &str, password: &str) -> Result<Option<User>> {
-    //     // First, get the user with the password hash
-    //     let user_with_password = sqlx::query!(
-    //         r#"
-    //         SELECT pk_user_id, firstname, lastname, gender, email, phone_number, is_searchable, 
-    //                allow_request_professional_agreement, language, rest_json, mail_preferences, 
-    //                created_at, verified_at, last_login_at, deactivated_at, password_hash
-    //         FROM "user" 
-    //         WHERE email = $1 AND deactivated_at IS NULL
-    //         "#,
-    //         email
-    //     )
-    //     .fetch_optional(&self.pool)
-    //     .await?;
-
-    //     if let Some(user_data) = user_with_password {
-    //         // Check the password
-    //         if bcrypt::verify(password, &user_data.password_hash)? {
-    //             // Update last_login_at
-    //             sqlx::query!(
-    //                 "UPDATE \"user\" SET last_login_at = NOW() WHERE pk_user_id = $1",
-    //                 user_data.pk_user_id
-    //             )
-    //             .execute(&self.pool)
-    //             .await?;
-
-    //             // Build the User object
-    //             let user = User {
-    //                 pk_user_id: user_data.pk_user_id,
-    //                 firstname: user_data.firstname,
-    //                 lastname: user_data.lastname,
-    //                 gender: user_data.gender,
-    //                 email: user_data.email,
-    //                 phone_number: user_data.phone_number,
-    //                 is_searchable: user_data.is_searchable,
-    //                 allow_request_professional_agreement: user_data.allow_request_professional_agreement,
-    //                 language: user_data.language,
-    //                 rest_json: user_data.rest_json,
-    //                 mail_preferences: user_data.mail_preferences,
-    //                 created_at: user_data.created_at,
-    //                 verified_at: user_data.verified_at,
-    //                 last_login_at: Some(Utc::now()),
-    //                 deactivated_at: user_data.deactivated_at,
-    //             };
-
-    //             Ok(Some(user))
-    //         } else {
-    //             Ok(None)
-    //         }
-    //     } else {
-    //         Ok(None)
-    //     }
-    // }
 }

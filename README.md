@@ -1,226 +1,55 @@
 # Plannify Admin API
 
-API d'administration pour la plateforme Plannify, permettant la gestion des employés, des chauffeurs et des autorisations.
+This repo is a REST API for the Plannify admin project. It's developed in Rust using Axum framework.
 
-## 🚀 Fonctionnalités
+## Repo Architecture
 
-- **Authentification JWT** : Système de connexion sécurisé pour les employés
-- **Gestion des employés** : Création et authentification des comptes employés
-- **Gestion des chauffeurs** : CRUD complet pour les chauffeurs
-- **Système de permissions** : Gestion fine des autorisations par niveau d'employé
-- **API REST** : Interface HTTP complète avec validation des données
+This repo is organized in the following way:
+- `src/` contains the source code of the API
+- `migrations/` contains the SQL migrations
+- `.sqlx/` contains the SQLx migrations informations
+- `.env.template` contains the environment variables template
+- `Cargo.toml` contains the dependencies of the project
+- `docker-compose.yml` contains the docker compose file
+- `Dockerfile` contains the Dockerfile for the API
+- `sqlx-cli.toml` contains the SQLx CLI configuration
+- `sqlx-data.json` contains the SQLx data
 
-## 🏗️ Architecture
+## How to run the API
 
-- **Backend** : Rust avec Axum
-- **Base de données** : PostgreSQL avec SQLx
-- **Authentification** : JWT avec bcrypt pour le hachage des mots de passe
-- **Validation** : Validation des données avec le crate `validator`
-- **Conteneurisation** : Docker et Docker Compose
+### Prerequisites
 
-## 📋 Prérequis
+- Rust
+- Cargo
 
-- Rust 1.70+
-- Docker et Docker Compose
-- PostgreSQL 15+
+### Run the API
 
-## 🛠️ Installation
-
-### 1. Cloner le projet
-
+You need to have a `.env` file in the root of the project. You can use the `.env.template` file as a template. Then you need to run the API external services:
 ```bash
-git clone <repository-url>
-cd plannify-admin/api
+docker compose up -d
 ```
 
-### 2. Configuration des variables d'environnement
+In the docker compose, there is a service called `db-migrate` that will run the SQLx migrations. It will create the database and the tables automatically.
 
-Créez un fichier `.env` à la racine du projet :
-
+Then you can run the API:
 ```bash
-DATABASE_URL=postgresql://username:password@localhost:5432/plannify_admin
-JWT_SECRET=your-super-secret-jwt-key-change-in-production
-```
-
-### 3. Démarrage avec Docker (Recommandé)
-
-```bash
-# Démarrer l'API et PostgreSQL
-./scripts/start-api.sh
-
-# Ou manuellement
-docker-compose up --build -d
-```
-
-### 4. Démarrage en local
-
-```bash
-# Installer les dépendances
-cargo install sqlx-cli
-
-# Créer la base de données
-sqlx database create
-
-# Exécuter les migrations
-sqlx migrate run
-
-# Démarrer l'API
 cargo run
 ```
 
-## 🗄️ Base de données
+### Run the API with Docker
 
-### Tables principales
+Soon.
 
-- **employees** : Comptes employés avec informations personnelles et professionnelles
-- **employee_levels** : Niveaux hiérarchiques des employés
-- **employee_authorizations** : Permissions disponibles dans le système
-- **employee_accreditation_authorizations** : Attribution des permissions aux employés
-- **drivers** : Informations sur les chauffeurs
-
-### Migrations
-
-Les migrations sont gérées avec SQLx CLI :
+## How to create a SQLx migrations
 
 ```bash
-# Créer une nouvelle migration
-sqlx migrate add nom_de_la_migration
-
-# Exécuter les migrations
-sqlx migrate run
-
-# Annuler la dernière migration
-sqlx migrate revert
+sqlx migrate add <migration-name> --source migrations/
 ```
 
-## 🔐 Authentification
-
-### Création d'un compte employé
+## How to run the SQLx migrations
 
 ```bash
-curl -X POST http://localhost:3000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "firstname": "Jean",
-    "lastname": "Dupont",
-    "professional_email": "jean.dupont@company.com",
-    "login_password": "motdepasse123",
-    "personal_email": "jean.dupont@personal.com",
-    "professional_email_password": "emailpass123"
-  }'
+sqlx migrate run --source migrations/ --database-url $DATABASE_URL
 ```
 
-### Connexion
-
-```bash
-curl -X POST http://localhost:3000/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
-    "professional_email": "jean.dupont@company.com",
-    "password": "motdepasse123"
-  }'
-```
-
-### Utilisation du token JWT
-
-```bash
-TOKEN="your-jwt-token-here"
-curl -H "Authorization: Bearer $TOKEN" \
-     http://localhost:3000/drivers
-```
-
-## 📚 Documentation API
-
-- [Guide d'authentification](docs/AUTH_API_USAGE.md)
-- [Guide des chauffeurs](docs/DRIVERS_API_USAGE.md)
-- [Guide des migrations](docs/MIGRATIONS.md)
-
-## 🧪 Tests
-
-### Tests de l'API d'authentification
-
-```bash
-./test_auth_api.sh
-```
-
-### Tests des chauffeurs
-
-```bash
-./test_drivers_api.sh
-```
-
-## 🔧 Développement
-
-### Structure du projet
-
-```
-src/
-├── main.rs              # Point d'entrée de l'application
-├── models/              # Modèles de données
-│   ├── employee.rs      # Modèle employé
-│   ├── driver.rs        # Modèle chauffeur
-│   └── jwt.rs           # Modèles JWT
-├── handlers/            # Gestionnaires des requêtes HTTP
-│   ├── auth_handlers.rs # Gestionnaires d'authentification
-│   └── driver_handlers.rs # Gestionnaires des chauffeurs
-├── database/            # Services de base de données
-│   ├── auth_service.rs  # Service d'authentification
-│   └── driver_service.rs # Service des chauffeurs
-├── middleware/          # Middleware HTTP
-│   └── auth.rs          # Middleware d'authentification
-└── errors/              # Gestion des erreurs
-    └── app_error.rs     # Types d'erreurs de l'application
-```
-
-### Ajout de nouvelles fonctionnalités
-
-1. **Modèles** : Créer les structures dans `src/models/`
-2. **Services** : Implémenter la logique métier dans `src/database/`
-3. **Handlers** : Créer les endpoints HTTP dans `src/handlers/`
-4. **Migrations** : Ajouter les tables nécessaires
-5. **Tests** : Créer des scripts de test
-
-## 🚀 Déploiement
-
-### Production
-
-1. **Variables d'environnement** : Configurez `JWT_SECRET` avec une clé forte
-2. **Base de données** : Utilisez une instance PostgreSQL gérée
-3. **HTTPS** : Configurez un reverse proxy avec SSL/TLS
-4. **Monitoring** : Ajoutez des métriques et des logs structurés
-
-### Docker
-
-```bash
-# Build de l'image
-docker build -t plannify-admin-api .
-
-# Exécution
-docker run -p 3000:3000 \
-  -e DATABASE_URL=your-db-url \
-  -e JWT_SECRET=your-secret \
-  plannify-admin-api
-```
-
-## 🤝 Contribution
-
-1. Fork le projet
-2. Créez une branche feature (`git checkout -b feature/AmazingFeature`)
-3. Committez vos changements (`git commit -m 'Add some AmazingFeature'`)
-4. Push vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrez une Pull Request
-
-## 📄 Licence
-
-Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
-
-## 🆘 Support
-
-Pour toute question ou problème :
-- Consultez la documentation dans le dossier `docs/`
-- Vérifiez les logs de l'application
-- Ouvrez une issue sur le repository
-
----
-
-**Note** : Ce projet est en développement actif. L'API peut évoluer et certaines fonctionnalités peuvent ne pas être encore implémentées.
+`$DATABASE_URL` is the URL of the database. You can get it in the `.env` file.

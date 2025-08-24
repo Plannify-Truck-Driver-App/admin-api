@@ -12,7 +12,6 @@ use crate::errors::app_error::AppError;
 use uuid::Uuid;
 use validator::Validate;
 
-// Simple validation function using the Validate trait
 fn validate_request<T: Validate>(req: &T) -> Result<(), AppError> {
     req.validate()
         .map_err(|e| AppError::Validation(format!("The request content is not valid: {}", e)))
@@ -64,12 +63,11 @@ pub async fn create_driver(
 ) -> Result<(StatusCode, Json<Driver>), AppError> {
     debug!("Create driver request: {:?}", create_req);
     
-    // Validate the request content
     validate_request(&create_req).map_err(|e| AppError::Validation(e.to_string()))?;
     
-    // Check if the email already exists    
+    // check if the email already exists
     if db.email_exists(&create_req.email).await? {
-        return Err(AppError::Conflict("a driver with this email already exists".to_string(), "DRIVER_EMAIL_ALREADY_EXISTS".to_string()));
+        return Err(AppError::Conflict("A driver with this email already exists".to_string(), "DRIVER_EMAIL_ALREADY_EXISTS".to_string()));
     }
     
     let created_driver = db.create_driver(&create_req).await?;
@@ -85,13 +83,12 @@ pub async fn update_driver(
     let driver_uuid = driver_id.parse::<Uuid>()
         .map_err(|_| AppError::Validation("Driver ID is not valid".to_string()))?;
     
-    // Validate the request content
     validate_request(&update_req)?;
     
-    // Check if the user exists
+    // check if the user exists
     let _existing_driver = db.get_driver_by_id(&driver_uuid).await?;
     
-    // If the email is modified, check if it already exists
+    // if the email is modified, check if it already exists
     if let Some(ref email) = update_req.email {
         if db.email_exists_except_driver(email, &driver_uuid).await? {
             return Err(AppError::Conflict("An other driver already uses this email".to_string(), "DRIVER_EMAIL_ALREADY_EXISTS".to_string()));
@@ -109,7 +106,7 @@ pub async fn deactivate_driver(
     let driver_uuid = driver_id.parse::<Uuid>()
         .map_err(|_| AppError::Validation("Driver ID is not valid".to_string()))?;
     
-    // Check if the user exists
+    // check if the user exists
     let _existing_driver = db.get_driver_by_id(&driver_uuid).await?;
     
     db.deactivate_driver(&driver_uuid).await?;
