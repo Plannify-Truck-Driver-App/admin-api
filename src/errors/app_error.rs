@@ -22,6 +22,9 @@ pub enum AppError {
     
     #[error("Validation error: {0}")]
     Validation(String),
+
+    #[error("Insufficient permissions: {0:?}")]
+    InsufficientPermissions(Vec<i32>),
     
     #[error("Internal server error")]
     Internal(String),
@@ -35,6 +38,7 @@ impl IntoResponse for AppError {
             AppError::Conflict(ref message, ref _error_code) => (StatusCode::CONFLICT, message.as_str()),
             AppError::NotFound(ref message) => (StatusCode::NOT_FOUND, message.as_str()),
             AppError::Validation(ref message) => (StatusCode::BAD_REQUEST, message.as_str()),
+            AppError::InsufficientPermissions(ref _permissions) => (StatusCode::FORBIDDEN, "Insufficient permissions"),
             AppError::Internal(ref message) => (StatusCode::INTERNAL_SERVER_ERROR, message.as_str()),
         };
 
@@ -44,6 +48,14 @@ impl IntoResponse for AppError {
                     "error": message,
                     "error_code": error_code,
                     "status": status.as_u16()
+                }))
+            },
+            AppError::InsufficientPermissions(ref permissions) => {
+                Json(json!({
+                    "error": "Insufficient permissions",
+                    "error_code": "INSUFFICIENT_PERMISSIONS",
+                    "status": 403,
+                    "required_permissions": permissions
                 }))
             },
             _ => {

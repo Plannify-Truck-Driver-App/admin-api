@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
@@ -57,4 +59,63 @@ pub struct EmployeeLoginResponse {
 pub struct EmployeeWithPermissions {
     pub employee: Employee,
     pub permissions: Vec<i32>,
+}
+
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum EntityType {
+    DRIVER,
+    EMPLOYEE,
+}
+
+impl FromStr for EntityType {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "DRIVER" => Ok(EntityType::DRIVER),
+            "EMPLOYEE" => Ok(EntityType::EMPLOYEE),
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum CrudType {
+    C,
+    R,
+    U,
+    D,
+}
+
+impl FromStr for CrudType {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "C" => Ok(CrudType::C),
+            "R" => Ok(CrudType::R),
+            "U" => Ok(CrudType::U),
+            "D" => Ok(CrudType::D),
+            _ => Err(()),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, FromRow)]
+pub struct EmployeeAuthorization {
+    pub pk_employee_authorization_id: i32,
+    pub authorization_feature_code: String,
+    pub authorization_index: i32,
+    pub crud_type: CrudType,
+    pub description: String,
+    pub category_name_code: String,
+    pub category_entity_type: EntityType,
+    pub category_index: i32,
+}
+
+#[derive(Debug, Serialize, Deserialize, FromRow)]
+pub struct EmployeeLevel {
+    pub pk_employee_level_id: i32,
+    pub level_index: i32,
+    pub level_label: String,
+    pub authorizations: Vec<EmployeeAuthorization>,
 }

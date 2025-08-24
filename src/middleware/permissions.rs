@@ -27,10 +27,7 @@ pub async fn require_permissions(
         .all(|&required| auth_state.permissions.contains(&required));
 
     if !has_all_permissions {
-        return Err(AppError::Validation(format!(
-            "Insufficient permissions. Required permissions: {:?}, Current permissions: {:?}",
-            required_permissions, auth_state.permissions
-        )));
+        return Err(AppError::InsufficientPermissions(required_permissions));
     }
 
     Ok(next.run(request).await)
