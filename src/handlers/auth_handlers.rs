@@ -9,7 +9,7 @@ use crate::{
         employee::{EmployeeLoginRequest, EmployeeCreate, Employee},
         jwt::{AuthResponse, RefreshTokenRequest},
     },
-    database::{driver_service::Database, auth_service::AuthService},
+    database::{driver_service::DriverService, auth_service::AuthService},
     errors::app_error::AppError,
 };
 use validator::Validate;
@@ -20,7 +20,7 @@ fn validate_request<T: Validate>(req: &T) -> Result<(), AppError> {
 }
 
 pub async fn login(
-    State((_db, auth_service)): State<(Arc<Database>, Arc<AuthService>)>,
+    State((_driver_service, auth_service)): State<(Arc<DriverService>, Arc<AuthService>)>,
     Json(login): Json<EmployeeLoginRequest>,
 ) -> Result<Json<AuthResponse>, AppError> {
     let response = auth_service.login(&login).await?;
@@ -28,7 +28,7 @@ pub async fn login(
 }
 
 pub async fn refresh_token(
-    State((_db, auth_service)): State<(Arc<Database>, Arc<AuthService>)>,
+    State((_driver_service, auth_service)): State<(Arc<DriverService>, Arc<AuthService>)>,
     Json(refresh_req): Json<RefreshTokenRequest>,
 ) -> Result<Json<AuthResponse>, AppError> {
     let response = auth_service.refresh_token(&refresh_req).await?;
@@ -36,7 +36,7 @@ pub async fn refresh_token(
 }
 
 pub async fn register(
-    State((_db, auth_service)): State<(Arc<Database>, Arc<AuthService>)>,
+    State((_driver_service, auth_service)): State<(Arc<DriverService>, Arc<AuthService>)>,
     Json(employee_data): Json<EmployeeCreate>,
 ) -> Result<Json<Employee>, AppError> {
     // validate the request content

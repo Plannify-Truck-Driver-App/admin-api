@@ -4,11 +4,11 @@ use uuid::Uuid;
 
 use crate::{errors::app_error::AppError, models::driver::{CreateDriverRequest, Driver, GetAllDriversQuery, UpdateDriverRequest}};
 
-pub struct Database {
+pub struct DriverService {
     pool: PgPool,
 }
 
-impl Database {
+impl DriverService {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
     }

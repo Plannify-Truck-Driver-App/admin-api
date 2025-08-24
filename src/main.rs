@@ -19,7 +19,7 @@ use crate::handlers::{
     driver_handlers::{get_all_drivers, get_driver_by_id, create_driver, update_driver, deactivate_driver},
     auth_handlers::{login, register, refresh_token}
 };
-use crate::database::{driver_service::Database, auth_service::AuthService};
+use crate::database::{driver_service::DriverService, auth_service::AuthService};
 use crate::middleware::{
     auth_middleware, 
     require_permissions,
@@ -38,11 +38,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("DATABASE_URL must be defined");
     
     let pool = PgPool::connect(&database_url).await?;
-    let db = Arc::new(Database::new(pool.clone()));
-    
     let jwt_secret = std::env::var("JWT_SECRET")
         .expect("JWT_SECRET must be defined");
     
+    let driver_service = Arc::new(DriverService::new(pool.clone()));
     let auth_service = Arc::new(AuthService::new(pool.clone()));
     
     info!("Database connection established");
@@ -56,7 +55,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/auth/login", post(login))
         .route("/auth/refresh", post(refresh_token))
         .route("/auth/register", post(register))
-        .with_state((db.clone(), auth_service.clone()));
+        .with_state((driver_service.clone(), auth_service.clone()));
     
     let protected_driver_routes = Router::new()
         .route("/drivers", get(get_all_drivers))
@@ -83,7 +82,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             (pool.clone(), jwt_secret.clone()),
             auth_middleware
         ))
-        .with_state(db.clone());
+        .with_state(driver_service.clone());
     
     // main app
     let app = Router::new()
