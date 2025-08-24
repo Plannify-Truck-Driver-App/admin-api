@@ -16,7 +16,7 @@ mod errors;
 mod middleware;
 
 use crate::handlers::{
-    auth_handlers::{login, refresh_token, register}, driver_handlers::{create_driver, deactivate_driver, get_all_drivers, get_driver_by_id, update_driver}, employee_handlers::{get_all_authorizations}
+    auth_handlers::{login, refresh_token, register}, driver_handlers::{create_driver, deactivate_driver, get_all_drivers, get_driver_by_id, update_driver}, employee_handlers::{get_all_authorizations, get_all_levels, get_level_by_id}
 };
 use crate::database::{driver_service::DriverService, auth_service::AuthService, employee_service::EmployeeService};
 use crate::middleware::{
@@ -84,7 +84,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         ))
         .with_state(driver_service.clone());
 
-    let protected_level_routes = Router::new()
+    let protected_authorizations_routes = Router::new()
         .route("/employees/authorizations", get(get_all_authorizations))
         //.route("/levels/{id}", get(get_level_by_id))
         .route_layer(axum_middleware::from_fn(|req: axum::extract::Request, next: axum::middleware::Next| {
@@ -103,12 +103,34 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             auth_middleware
         ))
         .with_state(employee_service.clone());
+
+    let protected_levels_routes = Router::new()
+        .route("/employees/levels", get(get_all_levels))
+        .route("/employees/levels/{id}", get(get_level_by_id))
+        .route_layer(axum_middleware::from_fn(|req: axum::extract::Request, next: axum::middleware::Next| {
+            let method = req.method().as_str();
+            let path = req.uri().path();
+
+            let required_permissions = match (method, path) {
+                ("GET", "/employees/levels") => vec![14], // read all levels
+                ("GET", path) if path.starts_with("/employees/levels/") => vec![14], // read level by id
+                _ => vec![], // no permission required (should not happen)
+            };
+
+            require_permissions(required_permissions, req, next)
+        }))
+        .layer(axum_middleware::from_fn_with_state(
+            (pool.clone(), jwt_secret.clone()),
+            auth_middleware
+        ))
+        .with_state(employee_service.clone());
     
     // main app
     let app = Router::new()
         .merge(public_routes)
         .merge(protected_driver_routes)
-        .merge(protected_level_routes)
+        .merge(protected_authorizations_routes)
+        .merge(protected_levels_routes)
         .layer(cors);
     
     let addr = "[::]:3000";

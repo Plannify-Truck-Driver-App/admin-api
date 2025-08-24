@@ -62,7 +62,7 @@ pub struct EmployeeWithPermissions {
 }
 
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum EntityType {
     DRIVER,
     EMPLOYEE,
@@ -79,7 +79,7 @@ impl FromStr for EntityType {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub enum CrudType {
     C,
     R,
@@ -100,7 +100,7 @@ impl FromStr for CrudType {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Serialize, Deserialize, FromRow, Clone)]
 pub struct EmployeeAuthorization {
     pub pk_employee_authorization_id: i32,
     pub authorization_feature_code: String,
@@ -117,5 +117,4 @@ pub struct EmployeeLevel {
     pub pk_employee_level_id: i32,
     pub level_index: i32,
     pub level_label: String,
-    pub authorizations: Vec<EmployeeAuthorization>,
 }

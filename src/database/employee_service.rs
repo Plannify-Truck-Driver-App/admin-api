@@ -1,6 +1,6 @@
 use sqlx::PgPool;
 
-use crate::{errors::app_error::AppError, models::{employee::{CrudType, EmployeeAuthorization, EntityType}}};
+use crate::{errors::app_error::AppError, models::employee::{CrudType, EmployeeAuthorization, EmployeeLevel, EntityType}};
 
 pub struct EmployeeService {
     pool: PgPool,
@@ -44,32 +44,35 @@ impl EmployeeService {
         Ok(result)
     }
 
-    // pub async fn get_all_employee_levels(&self) -> Result<Vec<EmployeeLevel>, AppError> {
-    //     let levels = sqlx::query_as!(
-    //         EmployeeLevel,
-    //         r#"
-    //         SELECT * FROM employee_levels
-    //         "#
-    //     )
-    //     .fetch_all(&self.pool).await?;
+    pub async fn get_all_employee_levels(&self) -> Result<Vec<EmployeeLevel>, AppError> {
+        let levels = sqlx::query_as!(
+            EmployeeLevel,
+            r#"
+            SELECT pk_employee_level_id, level_index, level_label
+            FROM employee_levels
+            "#
+        )
+        .fetch_all(&self.pool).await?;
         
-    //     Ok(levels)
-    // }
+        Ok(levels)
+    }
 
-    // pub async fn get_level_by_id(&self, level_id: i32) -> Result<EmployeeLevel, AppError> {
-    //     let level = sqlx::query_as!(
-    //         EmployeeLevel,
-    //         r#"
-    //         SELECT * FROM employee_levels WHERE pk_employee_level_id = $1
-    //         "#,
-    //         level_id
-    //     )
-    //     .fetch_optional(&self.pool).await?;
+    pub async fn get_employee_level_by_id(&self, level_id: i32) -> Result<EmployeeLevel, AppError> {
+        let level = sqlx::query_as!(
+            EmployeeLevel,
+            r#"
+            SELECT pk_employee_level_id, level_index, level_label
+            FROM employee_levels
+            WHERE pk_employee_level_id = $1
+            "#,
+            level_id
+        )
+        .fetch_optional(&self.pool).await?;
 
-    //     if level.is_none() {
-    //         return Err(AppError::NotFound("Level not found".to_string()));
-    //     }
+        if level.is_none() {
+            return Err(AppError::NotFound("Level not found".to_string()));
+        }
 
-    //     Ok(level.unwrap())
-    // }
+        Ok(level.unwrap())
+    }
 }   
