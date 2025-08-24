@@ -2,32 +2,22 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use chrono::Utc;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: Uuid, // employee_id
     pub email: String,
     pub firstname: String,
     pub lastname: String,
-    pub permissions: Vec<i32>, // authorization IDs
+    pub permissions: Vec<i32>,
     pub exp: i64, // expiration timestamp
     pub iat: i64, // issued at timestamp
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AuthResponse {
-    pub token: String,
-    pub token_type: String,
-    pub expires_in: i64,
-    pub employee: EmployeeInfo,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EmployeeInfo {
-    pub id: Uuid,
-    pub firstname: String,
-    pub lastname: String,
-    pub professional_email: String,
-    pub permissions: Vec<i32>,
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RefreshClaims {
+    pub sub: Uuid, // employee_id
+    pub exp: i64,  // expiration timestamp
+    pub iat: i64,  // issued at timestamp
 }
 
 impl Claims {
@@ -37,10 +27,10 @@ impl Claims {
         firstname: String,
         lastname: String,
         permissions: Vec<i32>,
-        expiration_hours: i64,
+        minutes_valid: u32,
     ) -> Self {
         let now = Utc::now();
-        let exp = now + chrono::Duration::hours(expiration_hours);
+        let exp = now + chrono::Duration::minutes(minutes_valid.into());
         
         Self {
             sub: employee_id,
@@ -52,9 +42,54 @@ impl Claims {
             iat: now.timestamp(),
         }
     }
-    
+
     pub fn is_expired(&self) -> bool {
         let now = Utc::now().timestamp();
         now > self.exp
     }
+}
+
+impl RefreshClaims {
+    pub fn new(employee_id: Uuid, minutes_valid: u32) -> Self {
+        let now = Utc::now();
+        let exp = now + chrono::Duration::minutes(minutes_valid.into());
+        
+        Self {
+            sub: employee_id,
+            exp: exp.timestamp(),
+            iat: now.timestamp(),
+        }
+    }
+
+    pub fn is_expired(&self) -> bool {
+        let now = Utc::now().timestamp();
+        now > self.exp
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EmployeeLoginRequest {
+    pub professional_email: String,
+    pub password: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct AuthResponse {
+    pub access_token: String,
+    pub refresh_token: String,
+    pub token_type: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RefreshTokenRequest {
+    pub refresh_token: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EmployeeInfo {
+    pub id: Uuid,
+    pub firstname: String,
+    pub lastname: String,
+    pub professional_email: String,
+    pub permissions: Vec<i32>,
 }

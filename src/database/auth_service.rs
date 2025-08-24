@@ -7,7 +7,7 @@ use jsonwebtoken::{encode, Header, EncodingKey};
 use crate::{
     models::{
         employee::{Employee, EmployeeLoginRequest, EmployeeCreate},
-        jwt::{Claims, AuthResponse, EmployeeInfo},
+        jwt::{Claims, RefreshClaims, AuthResponse, RefreshTokenRequest},
     },
     errors::app_error::AppError,
 };
@@ -15,14 +15,31 @@ use crate::{
 pub struct AuthService {
     pool: PgPool,
     jwt_secret: String,
+    access_token_duration_minutes: u32,
+    refresh_token_duration_minutes: u32,
 }
 
 impl AuthService {
-    pub fn new(pool: PgPool, jwt_secret: String) -> Self {
-        Self { pool, jwt_secret }
+    pub fn new(pool: PgPool) -> Self {
+        let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be defined");
+        let access_token_duration_minutes = std::env::var("ACCESS_TOKEN_DURATION_MINUTES")
+            .expect("ACCESS_TOKEN_DURATION_MINUTES must be defined")
+            .parse()
+            .expect("ACCESS_TOKEN_DURATION_MINUTES must be a valid number");
+        let refresh_token_duration_minutes = std::env::var("REFRESH_TOKEN_DURATION_MINUTES")
+            .expect("REFRESH_TOKEN_DURATION_MINUTES must be defined")
+            .parse()
+            .expect("REFRESH_TOKEN_DURATION_MINUTES must be a valid number");
+        
+        Self {
+            pool,
+            jwt_secret,
+            access_token_duration_minutes,
+            refresh_token_duration_minutes,
+        }
     }
-    
-    pub async fn authenticate_employee(&self, login: &EmployeeLoginRequest) -> Result<AuthResponse, AppError> {
+
+    pub async fn login(&self, login: &EmployeeLoginRequest) -> Result<AuthResponse, AppError> {
         // Récupérer l'employé par email professionnel
         let employee = sqlx::query_as!(
             Employee,
@@ -38,12 +55,12 @@ impl AuthService {
         )
         .fetch_optional(&self.pool)
         .await?
-        .ok_or(AppError::Validation("Email ou mot de passe incorrect".to_string()))?;
-        
+        .ok_or(AppError::Validation("Invalid email or password".to_string()))?;
+
         // Vérifier le mot de passe
         if !verify(&login.password, &employee.login_password_hash)
-            .map_err(|_| AppError::Internal("Email ou mot de passe incorrect".to_string()))? {
-            return Err(AppError::Validation("Email ou mot de passe incorrect".to_string()));
+            .map_err(|_| AppError::Internal("Invalid email or password".to_string()))? {
+            return Err(AppError::Validation("Invalid email or password".to_string()));
         }
         
         // Récupérer les permissions de l'employé
@@ -58,23 +75,61 @@ impl AuthService {
         .execute(&self.pool)
         .await?;
         
-        // Générer le token JWT
-        let token = self.generate_jwt(&employee, &permissions)?;
-        
-        // Construire la réponse
-        let employee_info = EmployeeInfo {
-            id: employee.pk_employee_id,
-            firstname: employee.firstname.clone(),
-            lastname: employee.lastname.clone(),
-            professional_email: employee.professional_email.clone(),
-            permissions: permissions,
-        };
+        // Générer les tokens JWT
+        let access_token = self.generate_access_token(&employee, &permissions)?;
+        let refresh_token = self.generate_refresh_token(&employee)?;
         
         Ok(AuthResponse {
-            token,
+            access_token,
+            refresh_token,
             token_type: "Bearer".to_string(),
-            expires_in: 24 * 60 * 60, // 24 heures en secondes
-            employee: employee_info,
+        })
+    }
+
+    pub async fn refresh_token(&self, refresh_req: &RefreshTokenRequest) -> Result<AuthResponse, AppError> {
+        // Décoder et valider le refresh token
+        let token_data = jsonwebtoken::decode::<RefreshClaims>(
+            &refresh_req.refresh_token,
+            &jsonwebtoken::DecodingKey::from_secret(self.jwt_secret.as_ref()),
+            &jsonwebtoken::Validation::default(),
+        )
+        .map_err(|_| AppError::Validation("Refresh token invalide".to_string()))?;
+
+        let claims = token_data.claims;
+
+        // Vérifier si le token a expiré
+        if claims.is_expired() {
+            return Err(AppError::Validation("Refresh token expiré".to_string()));
+        }
+
+        // Vérifier que l'employé existe toujours et est actif
+        let employee = sqlx::query_as!(
+            Employee,
+            r#"
+            SELECT 
+                pk_employee_id, firstname, lastname, gender, personal_email,
+                login_password_hash, phone_number, professional_email,
+                professional_email_password, created_at, last_login_at, deactivated_at
+            FROM employees 
+            WHERE pk_employee_id = $1 AND deactivated_at IS NULL
+            "#,
+            claims.sub
+        )
+        .fetch_optional(&self.pool)
+        .await?
+        .ok_or(AppError::Validation("Employé non trouvé ou désactivé".to_string()))?;
+
+        // Récupérer les permissions de l'employé
+        let permissions = self.get_employee_permissions(employee.pk_employee_id).await?;
+        
+        // Générer un nouveau access token
+        let access_token = self.generate_access_token(&employee, &permissions)?;
+        let refresh_token = self.generate_refresh_token(&employee)?;
+        
+        Ok(AuthResponse {
+            access_token,
+            refresh_token,
+            token_type: "Bearer".to_string(),
         })
     }
     
@@ -103,14 +158,14 @@ impl AuthService {
         Ok(permission_ids)
     }
     
-    fn generate_jwt(&self, employee: &Employee, permissions: &[i32]) -> Result<String, AppError> {
+    fn generate_access_token(&self, employee: &Employee, permissions: &[i32]) -> Result<String, AppError> {
         let claims = Claims::new(
             employee.pk_employee_id,
             employee.professional_email.clone(),
             employee.firstname.clone(),
             employee.lastname.clone(),
             permissions.to_vec(),
-            24, // 24 heures
+            self.access_token_duration_minutes, // 24 heures
         );
         
         let token = encode(
@@ -118,7 +173,23 @@ impl AuthService {
             &claims,
             &EncodingKey::from_secret(self.jwt_secret.as_ref()),
         )
-        .map_err(|_| AppError::Internal("An error occurred while generating the JWT".to_string()))?;
+        .map_err(|_| AppError::Internal("An error occurred while generating the access token".to_string()))?;
+        
+        Ok(token)
+    }
+
+    fn generate_refresh_token(&self, employee: &Employee) -> Result<String, AppError> {
+        let claims = RefreshClaims::new(
+            employee.pk_employee_id,
+            self.refresh_token_duration_minutes, // 7 jours
+        );
+        
+        let token = encode(
+            &Header::default(),
+            &claims,
+            &EncodingKey::from_secret(self.jwt_secret.as_ref()),
+        )
+        .map_err(|_| AppError::Internal("An error occurred while generating the refresh token".to_string()))?;
         
         Ok(token)
     }
