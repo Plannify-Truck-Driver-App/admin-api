@@ -4,7 +4,7 @@ use axum::{
 };
 use std::sync::Arc;
 
-use crate::{database::employee_service::EmployeeService, errors::app_error::AppError, models::employee::{EmployeeAuthorization, EmployeeLevel}};
+use crate::{services::employee_service::EmployeeService, errors::app_error::AppError, models::employee::{EmployeeAuthorization, EmployeeLevel}};
 
 pub async fn get_all_authorizations(
     State(employee_service): State<Arc<EmployeeService>>,

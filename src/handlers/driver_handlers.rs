@@ -7,7 +7,7 @@ use tracing::debug;
 use std::sync::Arc;
 
 use crate::models::driver::{CreateDriverRequest, GetAllDriversQuery, PaginatedResponse, PaginationInfo, UpdateDriverRequest, Driver};
-use crate::database::driver_service::DriverService;
+use crate::services::driver_service::DriverService;
 use crate::errors::app_error::AppError;
 use uuid::Uuid;
 use validator::Validate;

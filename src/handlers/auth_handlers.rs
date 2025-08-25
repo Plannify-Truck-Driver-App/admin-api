@@ -9,7 +9,7 @@ use crate::{
         employee::{EmployeeLoginRequest, EmployeeCreate, Employee},
         jwt::{AuthResponse, RefreshTokenRequest},
     },
-    database::{driver_service::DriverService, auth_service::AuthService},
+    services::{driver_service::DriverService, auth_service::AuthService},
     errors::app_error::AppError,
 };
 use validator::Validate;

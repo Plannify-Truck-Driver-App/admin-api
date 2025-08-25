@@ -11,14 +11,14 @@ use tracing::info;
 
 mod models;
 mod handlers;
-mod database;
+mod services;
 mod errors;
 mod middleware;
 
 use crate::handlers::{
-    auth_handlers::{login, refresh_token, register}, driver_handlers::{create_driver, deactivate_driver, get_all_drivers, get_driver_by_id, update_driver}, employee_handlers::{get_all_authorizations, get_all_levels, get_level_by_id}
+    auth_handlers::{login, refresh_token}, driver_handlers::{create_driver, deactivate_driver, get_all_drivers, get_driver_by_id, update_driver}, employee_handlers::{get_all_authorizations, get_all_levels, get_level_by_id}
 };
-use crate::database::{driver_service::DriverService, auth_service::AuthService, employee_service::EmployeeService};
+use crate::services::{driver_service::DriverService, auth_service::AuthService, employee_service::EmployeeService};
 use crate::middleware::{
     auth_middleware, 
     require_permissions,
