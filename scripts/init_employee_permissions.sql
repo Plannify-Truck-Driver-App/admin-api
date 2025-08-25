@@ -57,4 +57,6 @@ INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_autho
 INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (2, 13);
 INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (2, 14);
 
+INSERT INTO employees (pk_employee_id, firstname, lastname, gender, personal_email, login_password_hash, phone_number, professional_email, professional_email_password) VALUES ('2e6180da-b376-46df-8043-3b25d7e8be6e', 'Baptiste', 'Bronsin', 'M', 'baptiste.bronsin@outlook.com', '$2b$12$303SJbhjc5y/EouHAgoRkeq70UD3.JqzKp8b5C1ISMvr8ZcJcjPXK', null, 'baptiste.bronsin@plannify.be', 'plannify');
+
 INSERT INTO employee_accreditation_authorizations (fk_recipient_employee_id, fk_employee_level_id, fk_authorizing_employee_id, start_at, end_at) VALUES ('2e6180da-b376-46df-8043-3b25d7e8be6e', 1, '2e6180da-b376-46df-8043-3b25d7e8be6e', '2025-01-01', '2026-01-01');

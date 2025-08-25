@@ -54,7 +54,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .route("/health", get(health_check))
         .route("/auth/login", post(login))
         .route("/auth/refresh", post(refresh_token))
-        .route("/auth/register", post(register))
         .with_state((driver_service.clone(), auth_service.clone()));
     
     let protected_driver_routes = Router::new()
