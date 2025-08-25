@@ -6,6 +6,14 @@ use std::sync::Arc;
 
 use crate::{services::employee_service::EmployeeService, errors::app_error::AppError, models::employee::{EmployeeAuthorization, EmployeeLevel}};
 
+pub async fn get_employee_all_levels(
+    Path(employee_id): Path<String>,
+    State(employee_service): State<Arc<EmployeeService>>,
+) -> Result<Json<Vec<EmployeeLevel>>, AppError> {
+    let levels = employee_service.get_employee_levels_by_employee_id(&employee_id).await?;
+    Ok(Json(levels))
+}
+
 pub async fn get_all_authorizations(
     State(employee_service): State<Arc<EmployeeService>>,
 ) -> Result<Json<Vec<EmployeeAuthorization>>, AppError> {

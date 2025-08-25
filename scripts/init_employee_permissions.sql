@@ -20,10 +20,11 @@ INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_
 INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (11, 3, 'U', 'Update a driver suspension');
 INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (12, 3, 'D', 'Delete a driver suspension');
 INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (13, 4, 'R', 'Read all authorizations');
-INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (14, 5, 'R', 'Read all levels');
-INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (15, 5, 'C', 'Attribute a level to an employee');
-INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (16, 5, 'U', 'Update an employee level');
-INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (17, 5, 'D', 'Delete an employee level');
+INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (14, 4, 'R', 'Read employee authorizations');
+INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (15, 5, 'R', 'Read all levels');
+INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (16, 5, 'C', 'Attribute a level to an employee');
+INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (17, 5, 'U', 'Update an employee level');
+INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (18, 5, 'D', 'Delete an employee level');
 
 INSERT INTO employee_levels (pk_employee_level_id, level_index, level_label) VALUES (1, 1, 'ADMIN');
 INSERT INTO employee_levels (pk_employee_level_id, level_index, level_label) VALUES (2, 2, 'SUPPORT');
@@ -45,6 +46,7 @@ INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_autho
 INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (1, 15);
 INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (1, 16);
 INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (1, 17);
+INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (1, 18);
 
 INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (2, 1);
 INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (2, 2);
@@ -56,7 +58,8 @@ INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_autho
 INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (2, 11);
 INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (2, 13);
 INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (2, 14);
+INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (2, 15);
 
 INSERT INTO employees (pk_employee_id, firstname, lastname, gender, personal_email, login_password_hash, phone_number, professional_email, professional_email_password) VALUES ('2e6180da-b376-46df-8043-3b25d7e8be6e', 'Baptiste', 'Bronsin', 'M', 'baptiste.bronsin@outlook.com', '$2b$12$303SJbhjc5y/EouHAgoRkeq70UD3.JqzKp8b5C1ISMvr8ZcJcjPXK', null, 'baptiste.bronsin@plannify.be', 'plannify');
 
-INSERT INTO employee_accreditation_authorizations (fk_recipient_employee_id, fk_employee_level_id, fk_authorizing_employee_id, start_at, end_at) VALUES ('2e6180da-b376-46df-8043-3b25d7e8be6e', 1, '2e6180da-b376-46df-8043-3b25d7e8be6e', '2025-01-01', '2026-01-01');
+INSERT INTO employee_accreditation_authorizations (fk_recipient_employee_id, fk_employee_level_id, fk_authorizing_employee_id, start_at, end_at) VALUES ('2e6180da-b376-46df-8043-3b25d7e8be6e', 1, null, '2025-01-01', '2026-01-01');

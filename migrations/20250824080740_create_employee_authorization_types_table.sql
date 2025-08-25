@@ -7,8 +7,5 @@ CREATE TABLE IF NOT EXISTS public."employee_authorization_types" (
 
     CONSTRAINT fk_employee_authorization_id
     FOREIGN KEY (fk_employee_authorization_id)
-    REFERENCES employee_authorizations(pk_employee_authorization_id),
-
-    CONSTRAINT unique_crud_type_per_authorization
-    UNIQUE (fk_employee_authorization_id, crud_type)
+    REFERENCES employee_authorizations(pk_employee_authorization_id)
 );
