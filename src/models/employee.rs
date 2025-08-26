@@ -17,10 +17,20 @@ pub struct Employee {
     pub login_password_hash: String,
     pub phone_number: Option<String>,
     pub professional_email: String,
+    #[serde(skip_serializing)]
     pub professional_email_password: String,
     pub created_at: DateTime<Utc>,
     pub last_login_at: Option<DateTime<Utc>>,
     pub deactivated_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, FromRow, Validate)]
+pub struct LightEmployee {
+    pub pk_employee_id: Uuid,
+    pub firstname: String,
+    pub lastname: String,
+    pub gender: Option<String>,
+    pub professional_email: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
@@ -117,4 +127,22 @@ pub struct EmployeeLevel {
     pub pk_employee_level_id: i32,
     pub level_index: i32,
     pub level_label: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, FromRow)]
+pub struct EmployeeLevelWithAuthorizations {
+    pub pk_employee_level_id: i32,
+    pub level_index: i32,
+    pub level_label: String,
+    pub authorizations: Vec<EmployeeAuthorization>,
+}
+
+#[derive(Debug, Serialize, Deserialize, FromRow)]
+pub struct EmployeeAccreditation {
+    pub recipient_employee: LightEmployee,
+    pub employee_level: EmployeeLevel,
+    pub authorizing_employee: Option<LightEmployee>,
+    pub start_at: DateTime<Utc>,
+    pub end_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
 }

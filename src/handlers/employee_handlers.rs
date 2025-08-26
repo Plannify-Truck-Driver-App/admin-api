@@ -1,17 +1,35 @@
 use axum::{
-    extract::{Path, State},
+    extract::{Path, Query, State},
     Json,
 };
 use std::sync::Arc;
 
-use crate::{services::employee_service::EmployeeService, errors::app_error::AppError, models::employee::{EmployeeAuthorization, EmployeeLevel}};
+use crate::{errors::app_error::AppError, models::{employee::{EmployeeAccreditation, EmployeeAuthorization, EmployeeLevel, EmployeeLevelWithAuthorizations}, paginate::{PaginateQuery, PaginatedResponse, PaginationInfo, PAGINATE_MAX_LIMIT}}, services::employee_service::EmployeeService};
 
-pub async fn get_employee_all_levels(
+pub async fn get_employee_all_accreditations(
+    Query(filters): Query<PaginateQuery>,
     Path(employee_id): Path<String>,
     State(employee_service): State<Arc<EmployeeService>>,
-) -> Result<Json<Vec<EmployeeLevel>>, AppError> {
-    let levels = employee_service.get_employee_levels_by_employee_id(&employee_id).await?;
-    Ok(Json(levels))
+) -> Result<Json<PaginatedResponse<EmployeeAccreditation>>, AppError> {
+    if filters.page <= 0 {
+        return Err(AppError::Validation("Page must be greater than 0".to_string()));
+    }
+    if filters.limit <= 0 || filters.limit > PAGINATE_MAX_LIMIT {
+        return Err(AppError::Validation(format!("Limit must be between 1 and {}.", PAGINATE_MAX_LIMIT)));
+    }
+
+    let (accreditations, total) = employee_service.get_employee_accreditations_by_employee_id(&employee_id, &filters).await?;
+
+    let response = PaginatedResponse {
+        data: accreditations,
+        pagination: PaginationInfo {
+            total,
+            page: filters.page,
+            limit: filters.limit,
+        },
+    };
+
+    Ok(Json(response))
 }
 
 pub async fn get_all_authorizations(
@@ -31,7 +49,32 @@ pub async fn get_all_levels(
 pub async fn get_level_by_id(
     Path(level_id): Path<i32>,
     State(employee_service): State<Arc<EmployeeService>>,
-) -> Result<Json<EmployeeLevel>, AppError> {
-    let level = employee_service.get_employee_level_by_id(level_id).await?;
+) -> Result<Json<EmployeeLevelWithAuthorizations>, AppError> {
+    let level = employee_service.get_employee_level_with_authorizations_by_id(level_id).await?;
     Ok(Json(level))
+}
+
+pub async fn get_all_accreditations(
+    Query(filters): Query<PaginateQuery>,
+    State(employee_service): State<Arc<EmployeeService>>,
+) -> Result<Json<PaginatedResponse<EmployeeAccreditation>>, AppError> {
+    if filters.page <= 0 {
+        return Err(AppError::Validation("Page must be greater than 0".to_string()));
+    }
+    if filters.limit <= 0 || filters.limit > PAGINATE_MAX_LIMIT {
+        return Err(AppError::Validation(format!("Limit must be between 1 and {}.", PAGINATE_MAX_LIMIT)));
+    }
+    
+    let (accreditations, total) = employee_service.get_all_employee_accreditations(&filters).await?;
+
+    let response = PaginatedResponse {
+        data: accreditations,
+        pagination: PaginationInfo {
+            total,
+            page: filters.page,
+            limit: filters.limit,
+        },
+    };
+
+    Ok(Json(response))
 }

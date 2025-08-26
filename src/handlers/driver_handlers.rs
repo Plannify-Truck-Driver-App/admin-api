@@ -6,7 +6,7 @@ use axum::{
 use tracing::debug;
 use std::sync::Arc;
 
-use crate::models::driver::{CreateDriverRequest, GetAllDriversQuery, PaginatedResponse, PaginationInfo, UpdateDriverRequest, Driver};
+use crate::models::{driver::{CreateDriverRequest, Driver, GetAllDriversQuery, UpdateDriverRequest}, paginate::{PaginatedResponse, PaginationInfo, PAGINATE_MAX_LIMIT}};
 use crate::services::driver_service::DriverService;
 use crate::errors::app_error::AppError;
 use uuid::Uuid;
@@ -27,8 +27,8 @@ pub async fn get_all_drivers(
     if filters.page <= 0 {
         return Err(AppError::Validation("Page must be greater than 0".to_string()));
     }
-    if filters.limit <= 0 || filters.limit > 100 {
-        return Err(AppError::Validation("Limit must be between 1 and 100".to_string()));
+    if filters.limit <= 0 || filters.limit > PAGINATE_MAX_LIMIT {
+        return Err(AppError::Validation(format!("Limit must be between 1 and {}.", PAGINATE_MAX_LIMIT)));
     }
     
     let (drivers, total) = driver_service.get_all_drivers(&filters).await?;

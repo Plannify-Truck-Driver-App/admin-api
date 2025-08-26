@@ -5,6 +5,8 @@ use uuid::Uuid;
 use serde_json::Value;
 use validator::Validate;
 
+use crate::models::paginate::{default_limit, default_page, default_sort_order};
+
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct Driver {
     pub pk_driver_id: Uuid,
@@ -140,21 +142,4 @@ impl Default for GetAllDriversQuery {
             sort_order: default_sort_order(),
         }
     }
-}
-
-fn default_page() -> u32 { 1 }
-fn default_limit() -> u32 { 20 }
-fn default_sort_order() -> String { "asc".to_string() }
-
-#[derive(Debug, Serialize)]
-pub struct PaginatedResponse<T> {
-    pub data: Vec<T>,
-    pub pagination: PaginationInfo,
-}
-
-#[derive(Debug, Serialize)]
-pub struct PaginationInfo {
-    pub page: u32,
-    pub limit: u32,
-    pub total: u64,
 }

@@ -16,7 +16,7 @@ mod errors;
 mod middleware;
 
 use crate::handlers::{
-    auth_handlers::{login, refresh_token}, driver_handlers::{create_driver, deactivate_driver, get_all_drivers, get_driver_by_id, update_driver}, employee_handlers::{get_all_authorizations, get_all_levels, get_employee_all_levels, get_level_by_id}
+    auth_handlers::{login, refresh_token}, driver_handlers::{create_driver, deactivate_driver, get_all_drivers, get_driver_by_id, update_driver}, employee_handlers::{get_all_accreditations, get_all_authorizations, get_all_levels, get_employee_all_accreditations, get_level_by_id}
 };
 use crate::services::{driver_service::DriverService, auth_service::AuthService, employee_service::EmployeeService};
 use crate::middleware::{
@@ -84,16 +84,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_state(driver_service.clone());
 
     let protected_employees_routes = Router::new()
-        .route("/employees/{id}/levels", get(get_employee_all_levels))
+        .route("/employees/{id}/accreditations", get(get_employee_all_accreditations))
         .route("/employees/levels", get(get_all_levels))
         .route("/employees/levels/{id}", get(get_level_by_id))
         .route("/employees/authorizations", get(get_all_authorizations))
+        .route("/employees/accreditations", get(get_all_accreditations))
         .route_layer(axum_middleware::from_fn(|req: axum::extract::Request, next: axum::middleware::Next| {
             let method = req.method().as_str();
             let path = req.uri().path();
 
             let required_permissions = match (method, path) {
-                ("GET", path) if path.starts_with("/employees/") && path.ends_with("/levels") => vec![14], // read employee levels
+                ("GET", path) if path.starts_with("/employees/") && path.ends_with("/accreditations") => vec![14], // read employee accreditations
                 ("GET", "/employees/levels") => vec![15], // read all levels
                 ("GET", path) if path.starts_with("/employees/levels/") => vec![15], // read level by id
                 ("GET", "/employees/authorizations") => vec![13], // read all authorizations

@@ -20,7 +20,7 @@ INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_
 INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (11, 3, 'U', 'Update a driver suspension');
 INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (12, 3, 'D', 'Delete a driver suspension');
 INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (13, 4, 'R', 'Read all authorizations');
-INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (14, 4, 'R', 'Read employee authorizations');
+INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (14, 4, 'R', 'Read employee accreditations');
 INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (15, 5, 'R', 'Read all levels');
 INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (16, 5, 'C', 'Attribute a level to an employee');
 INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (17, 5, 'U', 'Update an employee level');
