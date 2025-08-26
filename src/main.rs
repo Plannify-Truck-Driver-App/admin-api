@@ -94,9 +94,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let path = req.uri().path();
 
             let required_permissions = match (method, path) {
-                ("GET", path) if path.starts_with("/employees/") && path.ends_with("/accreditations") => vec![14], // read employee accreditations
-                ("GET", "/employees/levels") => vec![15], // read all levels
-                ("GET", path) if path.starts_with("/employees/levels/") => vec![15], // read level by id
+                ("GET", path) if path.starts_with("/employees/") && path.ends_with("/accreditations") => vec![18], // read employee accreditations
+                ("GET", "/employees/levels") => vec![14], // read all levels
+                ("GET", path) if path.starts_with("/employees/levels/") => vec![14], // read level by id
                 ("GET", "/employees/authorizations") => vec![13], // read all authorizations
                 _ => vec![], // no permission required (should not happen)
             };
