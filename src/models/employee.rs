@@ -6,6 +6,8 @@ use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use validator::Validate;
 
+use crate::models::paginate::{default_limit, default_page, default_sort_order};
+
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, Validate)]
 pub struct Employee {
     pub pk_employee_id: Uuid,
@@ -31,6 +33,47 @@ pub struct LightEmployee {
     pub lastname: String,
     pub gender: Option<String>,
     pub professional_email: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GetAllEmployeesQuery {
+    #[serde(default = "default_page")]
+    pub page: u32,
+    #[serde(default = "default_limit")]
+    pub limit: u32,
+    #[serde(default)]
+    pub firstname: Option<String>,
+    #[serde(default)]
+    pub lastname: Option<String>,
+    #[serde(default)]
+    pub gender: Option<String>,
+    #[serde(default)]
+    pub personal_email: Option<String>,
+    #[serde(default)]
+    pub phone_number: Option<String>,
+    #[serde(default)]
+    pub professional_email: Option<String>,
+    #[serde(default)]
+    pub deactivated: Option<bool>,
+    #[serde(default = "default_sort_order")]
+    pub sort_order: String,
+}
+
+impl Default for GetAllEmployeesQuery {
+    fn default() -> Self {
+        Self {
+            page: default_page(),
+            limit: default_limit(),
+            firstname: None,
+            lastname: None,
+            gender: None,
+            personal_email: None,
+            phone_number: None,
+            professional_email: None,
+            deactivated: None,
+            sort_order: default_sort_order(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]

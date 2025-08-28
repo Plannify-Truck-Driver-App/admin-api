@@ -16,7 +16,7 @@ mod errors;
 mod middleware;
 
 use crate::handlers::{
-    auth_handlers::{login, refresh_token}, driver_handlers::{create_driver, deactivate_driver, get_all_drivers, get_driver_by_id, update_driver}, employee_handlers::{get_all_accreditations, get_all_authorizations, get_all_levels, get_employee_all_accreditations, get_level_by_id}
+    auth_handlers::{login, refresh_token}, driver_handlers::{create_driver, deactivate_driver, get_all_drivers, get_driver_by_id, update_driver}, employee_handlers::{get_all_accreditations, get_all_authorizations, get_all_employees, get_all_levels, get_employee_all_accreditations, get_employee_by_id, get_level_by_id}
 };
 use crate::services::{driver_service::DriverService, auth_service::AuthService, employee_service::EmployeeService};
 use crate::middleware::{
@@ -84,7 +84,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .with_state(driver_service.clone());
 
     let protected_employees_routes = Router::new()
+        .route("/employees", get(get_all_employees))
         .route("/employees/{id}/accreditations", get(get_employee_all_accreditations))
+        .route("/employees/{id}", get(get_employee_by_id))
         .route("/employees/levels", get(get_all_levels))
         .route("/employees/levels/{id}", get(get_level_by_id))
         .route("/employees/authorizations", get(get_all_authorizations))
@@ -94,10 +96,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let path = req.uri().path();
 
             let required_permissions = match (method, path) {
-                ("GET", path) if path.starts_with("/employees/") && path.ends_with("/accreditations") => vec![18], // read employee accreditations
-                ("GET", "/employees/levels") => vec![14], // read all levels
-                ("GET", path) if path.starts_with("/employees/levels/") => vec![14], // read level by id
-                ("GET", "/employees/authorizations") => vec![13], // read all authorizations
+                ("GET", "/employees") => vec![20], // read all employees
+                ("GET", path) if path.starts_with("/employees/") && path.ends_with("/accreditations") => vec![34], // read employee accreditations
+                ("GET", path) if path.starts_with("/employees/") => vec![20], // read employee by id
+                ("GET", "/employees/levels") => vec![33], // read all levels
+                ("GET", path) if path.starts_with("/employees/levels/") => vec![33], // read level by id
+                ("GET", "/employees/authorizations") => vec![32], // read all authorizations
+                ("GET", "/employees/accreditations") => vec![34], // read all accreditations
                 _ => vec![], // no permission required (should not happen)
             };
 
