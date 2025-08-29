@@ -12,7 +12,7 @@ jobs:
 
       - name: Generate version
         id: version
-        uses: PaulHatch/semantic-version@v5
+        uses: paulhatch/semantic-version@v5.4.0
         with:
           major_pattern: "(BREAKING CHANGE|major)"
           minor_pattern: "(feat|minor)"
