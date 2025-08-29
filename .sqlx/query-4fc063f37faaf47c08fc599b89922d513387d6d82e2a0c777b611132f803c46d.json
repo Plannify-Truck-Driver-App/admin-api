@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE \"user\" SET is_searchable = $1 WHERE pk_user_id = $2",
+  "query": "UPDATE \"drivers\" SET is_searchable = $1 WHERE pk_driver_id = $2",
   "describe": {
     "columns": [],
     "parameters": {
@@ -11,5 +11,5 @@
     },
     "nullable": []
   },
-  "hash": "d810221c47738e2e7b59ad3dc4f3d2fb97efc79b37ea1d88c00b6eb819496229"
+  "hash": "4fc063f37faaf47c08fc599b89922d513387d6d82e2a0c777b611132f803c46d"
 }

@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT pk_employee_id FROM employees WHERE professional_email = $1",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pk_employee_id",
+        "type_info": "Uuid"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "6bdeddde405d2de04c5bae6fff4ce1858565b4dd37b87bff2c2c24320f3e2eef"
+}

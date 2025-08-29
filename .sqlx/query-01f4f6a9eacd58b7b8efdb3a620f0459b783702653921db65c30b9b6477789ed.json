@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE \"drivers\" SET deactivated_at = NOW() WHERE pk_driver_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "01f4f6a9eacd58b7b8efdb3a620f0459b783702653921db65c30b9b6477789ed"
+}

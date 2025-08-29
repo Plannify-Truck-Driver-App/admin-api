@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE \"user\" SET deactivated_at = $1 WHERE pk_user_id = $2",
+  "query": "UPDATE \"drivers\" SET verified_at = $1 WHERE pk_driver_id = $2",
   "describe": {
     "columns": [],
     "parameters": {
@@ -11,5 +11,5 @@
     },
     "nullable": []
   },
-  "hash": "630ff05239a2328bfe058bfa5d99c5d07ae0f7a77c364f58c6d657c088cba6a0"
+  "hash": "a61ec2c1f5c0404cb4c9618f2299ec7fb3d80f7d4f33660839044b2ae0964f53"
 }

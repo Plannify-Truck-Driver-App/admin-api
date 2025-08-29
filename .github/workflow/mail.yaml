@@ -1,0 +1,36 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Generate version
+        id: version
+        uses: PaulHatch/semantic-version@v5
+        with:
+          major_pattern: "(BREAKING CHANGE|major)"
+          minor_pattern: "(feat|minor)"
+          version_format: "${major}.${minor}.${patch}"
+
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build Docker image
+        run: docker build -t ghcr.io/plannify-admin/api:${{ steps.version.outputs.version }} .
+
+      - name: Push Docker image
+        run: docker push ghcr.io/plannify-admin/api:${{ steps.version.outputs.version }}
+
+      - name: Push Git Tag
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git tag v$VERSION
+          git push origin v$VERSION

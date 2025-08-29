@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT DISTINCT\n                eat.pk_employee_authorization_type_id as authorization_id\n            FROM employee_accreditation_authorizations eaa\n            JOIN employee_levels el ON eaa.fk_employee_level_id = el.pk_employee_level_id\n            JOIN link_employee_authorization lea ON el.pk_employee_level_id = lea.fk_employee_level_id\n            JOIN employee_authorization_types eat ON lea.fk_employee_authorization_type_id = eat.pk_employee_authorization_type_id\n            JOIN employee_authorizations ea ON eat.fk_employee_authorization_id = ea.pk_employee_authorization_id\n            WHERE eaa.fk_recipient_employee_id = $1\n                AND (eaa.end_at IS NULL OR eaa.end_at > NOW())\n                AND eaa.start_at <= NOW()\n            ORDER BY eat.pk_employee_authorization_type_id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "authorization_id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "70164e7055f0ce05a6789bbf896230f1b6926bbf3183eb50f84962245b899031"
+}

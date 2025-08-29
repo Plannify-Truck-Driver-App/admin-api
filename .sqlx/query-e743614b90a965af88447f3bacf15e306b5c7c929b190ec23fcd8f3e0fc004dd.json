@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT pk_user_id, firstname, lastname, gender, email, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at, verified_at, last_login_at, deactivated_at FROM \"user\" WHERE pk_user_id = $1",
+  "query": "\n            SELECT \n                pk_employee_id, firstname, lastname, gender, personal_email,\n                login_password_hash, phone_number, professional_email,\n                professional_email_password, created_at, last_login_at, deactivated_at\n            FROM employees \n            WHERE pk_employee_id = $1 AND deactivated_at IS NULL\n            ",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "pk_user_id",
+        "name": "pk_employee_id",
         "type_info": "Uuid"
       },
       {
@@ -25,56 +25,41 @@
       },
       {
         "ordinal": 4,
-        "name": "email",
+        "name": "personal_email",
         "type_info": "Varchar"
       },
       {
         "ordinal": 5,
+        "name": "login_password_hash",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
         "name": "phone_number",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 6,
-        "name": "is_searchable",
-        "type_info": "Bool"
-      },
-      {
         "ordinal": 7,
-        "name": "allow_request_professional_agreement",
-        "type_info": "Bool"
+        "name": "professional_email",
+        "type_info": "Varchar"
       },
       {
         "ordinal": 8,
-        "name": "language",
+        "name": "professional_email_password",
         "type_info": "Varchar"
       },
       {
         "ordinal": 9,
-        "name": "rest_json",
-        "type_info": "Jsonb"
-      },
-      {
-        "ordinal": 10,
-        "name": "mail_preferences",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 11,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 12,
-        "name": "verified_at",
-        "type_info": "Timestamptz"
-      },
-      {
-        "ordinal": 13,
+        "ordinal": 10,
         "name": "last_login_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 14,
+        "ordinal": 11,
         "name": "deactivated_at",
         "type_info": "Timestamptz"
       }
@@ -90,17 +75,14 @@
       false,
       true,
       false,
-      true,
-      false,
-      false,
       false,
       true,
       false,
       false,
-      true,
+      false,
       true,
       true
     ]
   },
-  "hash": "52c7d8a9eaf167c870f4febf71f3bdf90251fb3ea973a443921b32cd4bc34d08"
+  "hash": "e743614b90a965af88447f3bacf15e306b5c7c929b190ec23fcd8f3e0fc004dd"
 }

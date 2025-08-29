@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT COUNT(*) as count FROM \"user\"",
+  "query": "SELECT COUNT(*) as count FROM \"drivers\" WHERE email = $1",
   "describe": {
     "columns": [
       {
@@ -10,11 +10,13 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Text"
+      ]
     },
     "nullable": [
       null
     ]
   },
-  "hash": "0da21dc9669e355c74f32a30cfd6fa93c6cd92d7e55b5747ed6371db9e087b45"
+  "hash": "7744936ef635823c0c6235561ba9eb544ec168470dc8a4961607ec056e104df0"
 }

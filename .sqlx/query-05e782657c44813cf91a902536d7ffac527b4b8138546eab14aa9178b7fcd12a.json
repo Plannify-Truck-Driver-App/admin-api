@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "UPDATE \"drivers\" SET allow_request_professional_agreement = $1 WHERE pk_driver_id = $2",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bool",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "05e782657c44813cf91a902536d7ffac527b4b8138546eab14aa9178b7fcd12a"
+}

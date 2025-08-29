@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE \"user\" SET last_login_at = $1 WHERE pk_user_id = $2",
+  "query": "UPDATE employees SET last_login_at = $1 WHERE pk_employee_id = $2",
   "describe": {
     "columns": [],
     "parameters": {
@@ -11,5 +11,5 @@
     },
     "nullable": []
   },
-  "hash": "c993625dd8ee33aeade377c97ad7f07fa736d4ec0741af7d3891bfb07e10b86f"
+  "hash": "4e3c0fe11607e7dc15ba5b84db0cb0454ce22ac6f3a7604ec4d94a66ba038d73"
 }

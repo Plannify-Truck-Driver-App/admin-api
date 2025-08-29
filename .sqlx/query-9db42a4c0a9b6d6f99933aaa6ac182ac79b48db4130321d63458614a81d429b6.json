@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE \"user\" SET email = $1 WHERE pk_user_id = $2",
+  "query": "UPDATE \"drivers\" SET language = $1 WHERE pk_driver_id = $2",
   "describe": {
     "columns": [],
     "parameters": {
@@ -11,5 +11,5 @@
     },
     "nullable": []
   },
-  "hash": "4196a63176de7db8cbcc43437521bf911adf28e7265ddde16586129f3385b9f0"
+  "hash": "9db42a4c0a9b6d6f99933aaa6ac182ac79b48db4130321d63458614a81d429b6"
 }

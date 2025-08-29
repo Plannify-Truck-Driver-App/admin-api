@@ -1,0 +1,95 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO employees (\n                firstname, lastname, gender, personal_email, login_password_hash,\n                phone_number, professional_email, professional_email_password\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)\n            RETURNING \n                pk_employee_id, firstname, lastname, gender, personal_email,\n                login_password_hash, phone_number, professional_email,\n                professional_email_password, created_at, last_login_at, deactivated_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pk_employee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "firstname",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "lastname",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "gender",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "personal_email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "login_password_hash",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 6,
+        "name": "phone_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "professional_email",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "professional_email_password",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "last_login_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 11,
+        "name": "deactivated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Text",
+        "Varchar",
+        "Varchar",
+        "Varchar"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      true
+    ]
+  },
+  "hash": "de3efba3324666ef1a5b1f9fe8d83a52fa9f42e0fe23ad679b74327750bea73f"
+}

@@ -1,0 +1,86 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT eat.pk_employee_authorization_type_id, ea.feature_code as authorization_feature_code, ea.authorization_index as authorization_index, eac.name_code as category_name_code, eac.entity_type as \"entity_type: String\", eac.category_index, eat.crud_type as \"crud_type: String\", eat.description\n            FROM employee_authorizations ea\n            JOIN employee_authorization_categories eac ON ea.fk_employee_authorization_category_id = eac.pk_employee_authorization_category_id\n            JOIN employee_authorization_types eat ON ea.pk_employee_authorization_id = eat.fk_employee_authorization_id\n            JOIN link_employee_authorization lea ON lea.fk_employee_authorization_type_id = eat.pk_employee_authorization_type_id\n            WHERE lea.fk_employee_level_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pk_employee_authorization_type_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "authorization_feature_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "authorization_index",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "category_name_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "entity_type: String",
+        "type_info": {
+          "Custom": {
+            "name": "\"EntityType\"",
+            "kind": {
+              "Enum": [
+                "DRIVER",
+                "EMPLOYEE"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 5,
+        "name": "category_index",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "crud_type: String",
+        "type_info": {
+          "Custom": {
+            "name": "\"CrudType\"",
+            "kind": {
+              "Enum": [
+                "R",
+                "C",
+                "U",
+                "D"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 7,
+        "name": "description",
+        "type_info": "Varchar"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "2a136b2c39b5d43fdafae0af31e0533359e7b0a986f15cb67c69ef06090d6932"
+}

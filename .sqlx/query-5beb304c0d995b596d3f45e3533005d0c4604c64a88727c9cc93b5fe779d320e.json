@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE \"user\" SET rest_json = $1 WHERE pk_user_id = $2",
+  "query": "UPDATE \"drivers\" SET rest_json = $1 WHERE pk_driver_id = $2",
   "describe": {
     "columns": [],
     "parameters": {
@@ -11,5 +11,5 @@
     },
     "nullable": []
   },
-  "hash": "bd20fb66a0827650270c5ae248784eeec100296a9f01b7f898c3010beac6d2f2"
+  "hash": "5beb304c0d995b596d3f45e3533005d0c4604c64a88727c9cc93b5fe779d320e"
 }

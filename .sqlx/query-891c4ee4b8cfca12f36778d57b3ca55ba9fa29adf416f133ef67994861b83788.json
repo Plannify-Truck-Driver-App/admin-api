@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT pk_user_id, firstname, lastname, gender, email, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at, verified_at, last_login_at, deactivated_at FROM \"user\" ORDER BY created_at DESC LIMIT $1 OFFSET $2",
+  "query": "\n            INSERT INTO \"drivers\" (pk_driver_id, firstname, lastname, gender, email, password_hash, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at)\n            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())\n            RETURNING pk_driver_id, firstname, lastname, gender, email, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at, verified_at, last_login_at, deactivated_at\n            ",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "pk_user_id",
+        "name": "pk_driver_id",
         "type_info": "Uuid"
       },
       {
@@ -81,8 +81,18 @@
     ],
     "parameters": {
       "Left": [
-        "Int8",
-        "Int8"
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Text",
+        "Varchar",
+        "Bool",
+        "Bool",
+        "Varchar",
+        "Jsonb",
+        "Int4"
       ]
     },
     "nullable": [
@@ -103,5 +113,5 @@
       true
     ]
   },
-  "hash": "41f2730dac02d1a3f6fa2f68867cc89594d40f51112afbffe52fa74660503996"
+  "hash": "891c4ee4b8cfca12f36778d57b3ca55ba9fa29adf416f133ef67994861b83788"
 }

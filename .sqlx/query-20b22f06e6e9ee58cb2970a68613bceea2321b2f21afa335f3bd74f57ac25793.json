@@ -1,11 +1,11 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            INSERT INTO \"user\" (pk_user_id, firstname, lastname, gender, email, password_hash, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at)\n            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())\n            RETURNING pk_user_id, firstname, lastname, gender, email, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at, verified_at, last_login_at, deactivated_at\n            ",
+  "query": "SELECT pk_driver_id, firstname, lastname, gender, email, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at, verified_at, last_login_at, deactivated_at FROM \"drivers\" WHERE pk_driver_id = $1",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "pk_user_id",
+        "name": "pk_driver_id",
         "type_info": "Uuid"
       },
       {
@@ -81,18 +81,7 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Text",
-        "Varchar",
-        "Bool",
-        "Bool",
-        "Varchar",
-        "Jsonb",
-        "Int4"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -113,5 +102,5 @@
       true
     ]
   },
-  "hash": "a2c33c8525a9f2853b9943debeff7189bc974cd4226b55e8d98281d962601565"
+  "hash": "20b22f06e6e9ee58cb2970a68613bceea2321b2f21afa335f3bd74f57ac25793"
 }

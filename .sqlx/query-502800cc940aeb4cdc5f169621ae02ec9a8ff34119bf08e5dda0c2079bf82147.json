@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT COUNT(*) as count FROM \"user\" WHERE email = $1 AND deactivated_at IS NULL",
+  "query": "SELECT COUNT(*) as count FROM \"drivers\" WHERE email = $1 AND pk_driver_id != $2",
   "describe": {
     "columns": [
       {
@@ -11,12 +11,13 @@
     ],
     "parameters": {
       "Left": [
-        "Text"
+        "Text",
+        "Uuid"
       ]
     },
     "nullable": [
       null
     ]
   },
-  "hash": "5aa7e8f54c05b8764be7f01c9e56f5dd83a9cebe0f9f285dec56185eccddc22b"
+  "hash": "502800cc940aeb4cdc5f169621ae02ec9a8ff34119bf08e5dda0c2079bf82147"
 }
