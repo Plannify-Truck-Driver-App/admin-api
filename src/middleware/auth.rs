@@ -20,8 +20,14 @@ pub struct AuthState {
     pub permissions: Vec<i32>,
 }
 
+#[derive(Clone)]
+pub struct MiddlewareState {
+    pub pool: PgPool,
+    pub jwt_secret: String,
+}
+
 pub async fn auth_middleware(
-    State((pool, jwt_secret)): State<(PgPool, String)>,
+    State(MiddlewareState { jwt_secret, .. }): State<MiddlewareState>,
     mut request: Request,
     next: Next,
 ) -> Result<Response, AppError> {
@@ -50,18 +56,9 @@ pub async fn auth_middleware(
         return Err(AppError::Validation("JWT token expired".to_string()));
     }
 
-    // check if the employee exists and is active
-    let employee = sqlx::query!(
-        "SELECT pk_employee_id FROM employees WHERE pk_employee_id = $1 AND deactivated_at IS NULL",
-        claims.sub
-    )
-    .fetch_optional(&pool)
-    .await?
-    .ok_or_else(|| AppError::Validation("Employee not found or deactivated".to_string()))?;
-
     // create auth state
     let auth_state = AuthState {
-        employee_id: employee.pk_employee_id,
+        employee_id: claims.sub,
         email: claims.email,
         permissions: claims.permissions,
     };
