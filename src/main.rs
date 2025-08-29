@@ -1,8 +1,4 @@
-use axum::{
-    routing::{get, post},
-    http::StatusCode,
-    Router,
-};
+use axum::Router;
 use sqlx::PgPool;
 use std::sync::Arc;
 use tower_http::cors::CorsLayer;
@@ -15,9 +11,7 @@ mod errors;
 mod middleware;
 mod routes;
 
-use crate::{handlers::{
-    auth_handlers::{login, refresh_token}
-}, routes::{driver::protected_driver_routes, employee::protected_employees_routes}};
+use crate::{routes::{auth::public_auth_routes, driver::protected_driver_routes, employee::protected_employees_routes}};
 use crate::services::{driver_service::DriverService, auth_service::AuthService, employee_service::EmployeeService};
 
 #[tokio::main]
@@ -44,17 +38,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     
     // CORS configuration
     let cors = CorsLayer::permissive();
-    
-    // public routes (no auth)
-    let public_routes = Router::new()
-        .route("/health", get(health_check))
-        .route("/auth/login", post(login))
-        .route("/auth/refresh", post(refresh_token))
-        .with_state((driver_service.clone(), auth_service.clone()));
 
     // main app
     let app = Router::new()
-        .merge(public_routes)
+        .merge(public_auth_routes(auth_service.clone()))
         .merge(protected_driver_routes(
             jwt_secret.clone(),
             driver_service.clone(),
@@ -72,8 +59,4 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     axum::serve(listener, app).await?;
     
     Ok(())
-}
-
-async fn health_check() -> StatusCode {
-    StatusCode::OK
 }

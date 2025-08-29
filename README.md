@@ -7,6 +7,7 @@ This repo is a REST API for the Plannify admin project. It's developed in Rust u
 This repo is organized in the following way:
 - `src/` contains the source code of the API
 - `migrations/` contains the SQL migrations
+- `scripts/` contains the Docker migration scripts and some development data
 - `.sqlx/` contains the SQLx migrations informations
 - `.env.template` contains the environment variables template
 - `Cargo.toml` contains the dependencies of the project

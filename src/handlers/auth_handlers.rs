@@ -20,7 +20,7 @@ fn validate_request<T: Validate>(req: &T) -> Result<(), AppError> {
 }
 
 pub async fn login(
-    State((_driver_service, auth_service)): State<(Arc<DriverService>, Arc<AuthService>)>,
+    State(auth_service): State<Arc<AuthService>>,
     Json(login): Json<EmployeeLoginRequest>,
 ) -> Result<Json<AuthResponse>, AppError> {
     let response = auth_service.login(&login).await?;
@@ -28,7 +28,7 @@ pub async fn login(
 }
 
 pub async fn refresh_token(
-    State((_driver_service, auth_service)): State<(Arc<DriverService>, Arc<AuthService>)>,
+    State(auth_service): State<Arc<AuthService>>,
     Json(refresh_req): Json<RefreshTokenRequest>,
 ) -> Result<Json<AuthResponse>, AppError> {
     let response = auth_service.refresh_token(&refresh_req).await?;
