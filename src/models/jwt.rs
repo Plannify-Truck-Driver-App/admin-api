@@ -8,7 +8,7 @@ pub struct Claims {
     pub email: String,
     pub firstname: String,
     pub lastname: String,
-    pub permissions: Vec<i32>,
+    pub authorizations: Vec<i32>,
     pub exp: i64, // expiration timestamp
     pub iat: i64, // issued at timestamp
 }
@@ -26,7 +26,7 @@ impl Claims {
         email: String,
         firstname: String,
         lastname: String,
-        permissions: Vec<i32>,
+        authorizations: Vec<i32>,
         minutes_valid: u32,
     ) -> Self {
         let now = Utc::now();
@@ -37,7 +37,7 @@ impl Claims {
             email,
             firstname,
             lastname,
-            permissions,
+            authorizations,
             exp: exp.timestamp(),
             iat: now.timestamp(),
         }

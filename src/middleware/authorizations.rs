@@ -22,11 +22,11 @@ pub async fn require_permissions(
         .ok_or_else(|| AppError::Validation("Authentication required".to_string()))?;
 
     // check if the employee has all the required permissions
-    let has_all_permissions = required_permissions
+    let has_all_authorizations = required_permissions
         .iter()
-        .all(|&required| auth_state.permissions.contains(&required));
+        .all(|&required| auth_state.authorizations.contains(&required));
 
-    if !has_all_permissions {
+    if !has_all_authorizations {
         return Err(AppError::InsufficientPermissions(required_permissions));
     }
 

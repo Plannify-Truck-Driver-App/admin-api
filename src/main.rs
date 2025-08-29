@@ -56,12 +56,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let app = Router::new()
         .merge(public_routes)
         .merge(protected_driver_routes(
-            pool.clone(),
             jwt_secret.clone(),
             driver_service.clone(),
         ))
         .merge(protected_employees_routes(
-            pool.clone(),
             jwt_secret.clone(),
             employee_service.clone(),
         ))

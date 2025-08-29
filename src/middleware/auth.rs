@@ -8,21 +8,17 @@ use jsonwebtoken::{decode, DecodingKey, Validation};
 use uuid::Uuid;
 
 use crate::{
-    models::jwt::Claims,
-    errors::app_error::AppError,
+    errors::app_error::AppError, middleware::require_permissions, models::jwt::Claims
 };
-use sqlx::PgPool;
 
 #[derive(Clone)]
 pub struct AuthState {
     pub employee_id: Uuid,
-    pub email: String,
-    pub permissions: Vec<i32>,
+    pub authorizations: Vec<i32>,
 }
 
 #[derive(Clone)]
 pub struct MiddlewareState {
-    pub pool: PgPool,
     pub jwt_secret: String,
 }
 
@@ -59,12 +55,29 @@ pub async fn auth_middleware(
     // create auth state
     let auth_state = AuthState {
         employee_id: claims.sub,
-        email: claims.email,
-        permissions: claims.permissions,
+        authorizations: claims.authorizations,
     };
 
     // add auth state to request
     request.extensions_mut().insert(auth_state);
 
     Ok(next.run(request).await)
+}
+
+pub fn with_required_permissions(
+    required_permissions: Vec<i32>,
+) -> impl Fn(Request, Next) -> std::pin::Pin<
+        Box<dyn std::future::Future<Output = Result<Response, AppError>> + Send>
+    >
+    + Clone
+    + Send
+    + Sync
+    + 'static
+{
+    move |req: Request, next: Next| {
+        let required_permissions = required_permissions.clone();
+        Box::pin(async move {
+            require_permissions(required_permissions, req, next).await
+        })
+    }
 }

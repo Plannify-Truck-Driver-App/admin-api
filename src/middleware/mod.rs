@@ -1,5 +1,5 @@
 pub mod auth;
-pub mod permissions;
+pub mod authorizations;
 
 pub use auth::*;
-pub use permissions::*;
+pub use authorizations::*;
