@@ -1,7 +1,7 @@
 use axum::Router;
 use sqlx::PgPool;
 use std::sync::Arc;
-use tower_http::cors::CorsLayer;
+use tower_http::{cors::CorsLayer, trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer}};
 use tracing::info;
 
 mod models;
@@ -50,7 +50,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             jwt_secret.clone(),
             employee_service.clone(),
         ))
-        .layer(cors);
+        .layer(cors)
+        .layer(
+            TraceLayer::new_for_http()
+                .make_span_with(DefaultMakeSpan::new().include_headers(true))
+                .on_response(DefaultOnResponse::new().include_headers(true)),
+        );
     
     let addr = "[::]:3000";
     info!("Server started on {}", addr);
