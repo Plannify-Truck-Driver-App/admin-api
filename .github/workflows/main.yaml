@@ -11,6 +11,8 @@ permissions:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v3
 
@@ -62,6 +64,7 @@ jobs:
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
           git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/plannify-truck-driver-app/infrastructure.git
+          git pull origin main
           git add $FILE
           git commit -m "chore: bump admin-api PROD image to $VERSION"
           git push origin HEAD:main
