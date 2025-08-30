@@ -50,8 +50,8 @@ jobs:
       - name: Checkout infra repo
         uses: actions/checkout@v3
         with:
-          repository: Plannify-Truck-Driver-App/infrastructure
-          token: ${{ secrets.GH_PAT || github.token }}
+          repository: plannify-truck-driver-app/infrastructure
+          token: ${{ secrets.GH_PAT }}
           fetch-depth: 0
 
       - name: Update dev-admin-api.yaml with new tag
@@ -64,6 +64,7 @@ jobs:
 
           git config user.name "${{ github.actor }}"
           git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/plannify-truck-driver-app/infrastructure.git
           git add $FILE
           git commit -m "chore: bump admin-api DEV image to $VERSION"
           git push origin HEAD:main
