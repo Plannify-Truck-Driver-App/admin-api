@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{errors::app_error::AppError, models::{employee::{CrudType, Employee, EmployeeAccreditation, EmployeeAuthorization, EmployeeLevel, EmployeeLevelWithAuthorizations, EntityType, GetAllEmployeesQuery, LightEmployee}, paginate::{PaginateQuery, PaginatedResponse, PaginationInfo}}};
+use crate::{employee::models::{CrudType, Employee, EmployeeAccreditation, EmployeeAuthorization, EmployeeLevel, EmployeeLevelWithAuthorizations, EntityType, GetAllEmployeesQuery, LightEmployee}, errors::app_error::AppError, models::paginate::{PaginateQuery, PaginatedResponse, PaginationInfo}};
 use futures::stream::StreamExt;
 
 pub struct EmployeeService {

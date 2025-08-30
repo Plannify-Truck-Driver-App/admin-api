@@ -1,15 +1,11 @@
+use chrono::Utc;
 use sqlx::PgPool;
 use bcrypt::{hash, verify, DEFAULT_COST};
 use uuid::Uuid;
-use chrono::Utc;
 use jsonwebtoken::{encode, Header, EncodingKey};
 
 use crate::{
-    models::{
-        employee::{Employee, EmployeeLoginRequest, EmployeeCreate},
-        jwt::{Claims, RefreshClaims, AuthResponse, RefreshTokenRequest},
-    },
-    errors::app_error::AppError,
+    auth::models::{AuthResponse, Claims, RefreshClaims, RefreshTokenRequest}, employee::models::{Employee, EmployeeCreate, EmployeeLoginRequest}, errors::app_error::AppError
 };
 
 pub struct AuthService {

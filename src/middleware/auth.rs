@@ -8,7 +8,7 @@ use jsonwebtoken::{decode, DecodingKey, Validation};
 use uuid::Uuid;
 
 use crate::{
-    errors::app_error::AppError, middleware::require_permissions, models::jwt::Claims
+    auth::models::Claims, errors::app_error::AppError, middleware::require_permissions
 };
 
 #[derive(Clone)]

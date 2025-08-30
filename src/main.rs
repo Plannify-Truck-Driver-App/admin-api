@@ -4,15 +4,14 @@ use std::sync::Arc;
 use tower_http::{cors::CorsLayer, trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer}};
 use tracing::info;
 
+use crate::{auth::{routes::public_auth_routes, services::AuthService}, driver::{routes::protected_driver_routes, services::DriverService}, employee::{routes::protected_employees_routes, services::EmployeeService}};
+
 mod models;
-mod handlers;
-mod services;
 mod errors;
 mod middleware;
-mod routes;
-
-use crate::{routes::{auth::public_auth_routes, driver::protected_driver_routes, employee::protected_employees_routes}};
-use crate::services::{driver_service::DriverService, auth_service::AuthService, employee_service::EmployeeService};
+mod driver;
+mod auth;
+mod employee;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

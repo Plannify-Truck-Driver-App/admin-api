@@ -5,16 +5,7 @@ use axum::{
 use std::sync::Arc;
 
 use crate::{
-    errors::app_error::AppError,
-    models::{employee::{
-        Employee, EmployeeAccreditation, EmployeeAuthorization, EmployeeLevel, EmployeeLevelWithAuthorizations, GetAllEmployeesQuery
-    }, paginate::{
-        PaginateQuery,
-        PaginatedResponse,
-        PaginationInfo,
-        PAGINATE_MAX_LIMIT
-    }},
-    services::employee_service::EmployeeService
+    employee::{models::{Employee, EmployeeAccreditation, EmployeeAuthorization, EmployeeLevel, EmployeeLevelWithAuthorizations, GetAllEmployeesQuery}, services::EmployeeService}, errors::app_error::AppError, models::paginate::{PaginateQuery, PaginatedResponse, PaginationInfo, PAGINATE_MAX_LIMIT}
 };
 
 pub async fn get_all_employees(

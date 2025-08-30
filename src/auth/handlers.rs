@@ -5,12 +5,7 @@ use axum::{
 use std::sync::Arc;
 
 use crate::{
-    models::{
-        employee::{EmployeeLoginRequest, EmployeeCreate, Employee},
-        jwt::{AuthResponse, RefreshTokenRequest},
-    },
-    services::{driver_service::DriverService, auth_service::AuthService},
-    errors::app_error::AppError,
+    auth::{models::{AuthResponse, RefreshTokenRequest}, services::AuthService}, employee::models::{Employee, EmployeeCreate, EmployeeLoginRequest}, errors::app_error::AppError
 };
 use validator::Validate;
 
@@ -36,7 +31,7 @@ pub async fn refresh_token(
 }
 
 pub async fn register(
-    State((_driver_service, auth_service)): State<(Arc<DriverService>, Arc<AuthService>)>,
+    State((_driver_service, auth_service)): State<(Arc<AuthService>, Arc<AuthService>)>,
     Json(employee_data): Json<EmployeeCreate>,
 ) -> Result<Json<Employee>, AppError> {
     // validate the request content

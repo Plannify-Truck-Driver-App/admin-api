@@ -2,7 +2,7 @@ use sqlx::PgPool;
 use bcrypt::{hash, DEFAULT_COST};
 use uuid::Uuid;
 
-use crate::{errors::app_error::AppError, models::driver::{CreateDriverRequest, Driver, GetAllDriversQuery, UpdateDriverRequest}};
+use crate::{driver::models::{CreateDriverRequest, Driver, GetAllDriversQuery, UpdateDriverRequest}, errors::app_error::AppError};
 
 pub struct DriverService {
     pool: PgPool,

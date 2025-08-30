@@ -6,8 +6,7 @@ use axum::{
 use tracing::debug;
 use std::sync::Arc;
 
-use crate::models::{driver::{CreateDriverRequest, Driver, GetAllDriversQuery, UpdateDriverRequest}, paginate::{PaginatedResponse, PaginationInfo, PAGINATE_MAX_LIMIT}};
-use crate::services::driver_service::DriverService;
+use crate::{driver::{models::{CreateDriverRequest, Driver, GetAllDriversQuery, UpdateDriverRequest}, services::DriverService}, models::paginate::{PaginatedResponse, PaginationInfo, PAGINATE_MAX_LIMIT}};
 use crate::errors::app_error::AppError;
 use uuid::Uuid;
 use validator::Validate;
@@ -115,7 +114,7 @@ pub async fn deactivate_driver(
 
 #[cfg(test)]
 mod tests {
-    use crate::models::driver::GetAllDriversQuery;
+    use crate::driver::models::GetAllDriversQuery;
 
     #[test]
     fn test_get_all_drivers_query_deserialization() {

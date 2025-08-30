@@ -1,11 +1,7 @@
 use axum::{
     middleware::{from_fn, from_fn_with_state}, routing::{delete, get, post, put}, Router
 };
-use crate::{
-    handlers::driver_handlers::{
-        create_driver, deactivate_driver, get_all_drivers, get_driver_by_id, update_driver
-    }, middleware::{auth_middleware, with_required_permissions, MiddlewareState}, services::driver_service::DriverService
-};
+use crate::{driver::{handlers::{create_driver, deactivate_driver, get_all_drivers, get_driver_by_id, update_driver}, services::DriverService}, middleware::{auth_middleware, with_required_permissions, MiddlewareState}};
 use std::sync::Arc;
 
 pub fn protected_driver_routes(

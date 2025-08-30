@@ -68,12 +68,6 @@ impl RefreshClaims {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct EmployeeLoginRequest {
-    pub professional_email: String,
-    pub password: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct AuthResponse {
     pub access_token: String,
     pub refresh_token: String,

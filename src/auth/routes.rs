@@ -2,10 +2,7 @@ use axum::{
     routing::{get, post}, Router
 };
 use http::StatusCode;
-use crate::{
-    handlers::auth_handlers::{login, refresh_token},
-    services::{auth_service::AuthService}
-};
+use crate::auth::{handlers::{login, refresh_token}, services::AuthService};
 use std::sync::Arc;
 
 pub fn public_auth_routes(
