@@ -26,7 +26,7 @@ jobs:
           version_format: "${major}.${minor}.${patch}-dev.${increment}"
 
       - name: Log in to GitHub Container Registry
-        run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        run: echo "${{ secrets.GH_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build Docker image
         run: docker build -t ghcr.io/plannify-truck-driver-app/admin-api:${{ steps.version.outputs.version }} .
