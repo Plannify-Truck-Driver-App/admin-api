@@ -29,10 +29,10 @@ jobs:
         run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build Docker image
-        run: docker build -t ghcr.io/plannify-truck-driver-app/admin-api/api:${{ steps.version.outputs.version }} .
+        run: docker build -t ghcr.io/plannify-truck-driver-app/admin-api:${{ steps.version.outputs.version }} .
 
       - name: Push Docker image
-        run: docker push ghcr.io/plannify-truck-driver-app/admin-api/api:${{ steps.version.outputs.version }}
+        run: docker push ghcr.io/plannify-truck-driver-app/admin-api:${{ steps.version.outputs.version }}
 
       - name: Push Git Tag
         run: |
@@ -42,3 +42,28 @@ jobs:
           git remote set-url origin https://x-access-token:${{ secrets.GH_PAT }}@github.com/plannify-truck-driver-app/admin-api.git
           git tag v$VERSION
           git push origin v$VERSION
+
+  update-infra:
+    runs-on: ubuntu-latest
+    needs: build-and-push-dev
+    steps:
+      - name: Checkout infra repo
+        uses: actions/checkout@v3
+        with:
+          repository: Plannify-Truck-Driver-App/infrastructure
+          token: ${{ secrets.GH_PAT || github.token }}
+          fetch-depth: 0
+
+      - name: Update dev-admin-api.yaml with new tag
+        run: |
+          VERSION=${{ needs.build-and-push-dev.outputs.version }}
+          FILE="yaml-applications/dev-admin-api.yaml"
+
+          echo "Updating image tag in $FILE to $VERSION"
+          sed -i "s|\(ghcr.io/plannify-truck-driver-app/admin-api:\).*|\1$VERSION|" $FILE
+
+          git config user.name "${{ github.actor }}"
+          git config user.email "${{ github.actor }}@users.noreply.github.com"
+          git add $FILE
+          git commit -m "chore: bump admin-api DEV image to $VERSION"
+          git push origin HEAD:main
