@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   build-and-push-dev:
-    runs-on: plannify-admin-api-runners
+    # runs-on: plannify-admin-api-runners
     outputs:
       version: ${{ steps.version.outputs.version }}
     steps:
@@ -46,7 +46,7 @@ jobs:
           git push origin v$VERSION
 
   deployment-dev:
-    runs-on: plannify-admin-api-runners
+    # runs-on: plannify-admin-api-runners
     needs: build-and-push-dev
     steps:
       - name: Checkout infra repo
