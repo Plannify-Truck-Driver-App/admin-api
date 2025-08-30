@@ -39,8 +39,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // CORS configuration
     let cors = CorsLayer::permissive();
 
-    // main app
-    let app = Router::new()
+    let admin_router = Router::new()
         .merge(public_auth_routes(auth_service.clone()))
         .merge(protected_driver_routes(
             jwt_secret.clone(),
@@ -49,7 +48,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .merge(protected_employees_routes(
             jwt_secret.clone(),
             employee_service.clone(),
-        ))
+        ));
+
+    let app = Router::new()
+        .nest("/admin", admin_router)
         .layer(cors)
         .layer(
             TraceLayer::new_for_http()
