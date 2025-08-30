@@ -16,7 +16,7 @@ jobs:
         id: version
         uses: paulhatch/semantic-version@v5.4.0
         with:
-          tag_prefix: "dev-"
+          tag_prefix: "v"
           major_pattern: "(BREAKING CHANGE|major)"
           minor_pattern: "(feat|minor)"
           version_format: "${major}.${minor}.${patch}-dev.${increment}"
