@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use axum::{
     extract::{State, Request},
     middleware::Next,
@@ -8,22 +10,25 @@ use jsonwebtoken::{decode, DecodingKey, Validation};
 use uuid::Uuid;
 
 use crate::{
-    auth::models::Claims, errors::app_error::AppError, middleware::require_permissions
+    auth::{models::Claims, services::AuthService}, driver::services::DriverService, employee::services::EmployeeService, errors::app_error::AppError, middleware::require_permissions
 };
 
 #[derive(Clone)]
+pub struct AppState {
+    pub auth_service: Arc<AuthService>,
+    pub employee_service: Arc<EmployeeService>,
+    pub driver_service: Arc<DriverService>,
+    pub jwt_secret: String,
+}
+
+#[derive(Clone, Debug)]
 pub struct AuthState {
     pub employee_id: Uuid,
     pub authorizations: Vec<i32>,
 }
 
-#[derive(Clone)]
-pub struct MiddlewareState {
-    pub jwt_secret: String,
-}
-
 pub async fn auth_middleware(
-    State(MiddlewareState { jwt_secret, .. }): State<MiddlewareState>,
+    State(app_state): State<AppState>,
     mut request: Request,
     next: Next,
 ) -> Result<Response, AppError> {
@@ -40,7 +45,7 @@ pub async fn auth_middleware(
     // decode and validate JWT token
     let token_data = decode::<Claims>(
         token,
-        &DecodingKey::from_secret(jwt_secret.as_ref()),
+        &DecodingKey::from_secret(app_state.jwt_secret.as_ref()),
         &Validation::default(),
     )
     .map_err(|_| AppError::Validation("Invalid JWT token".to_string()))?;

@@ -19,7 +19,10 @@ pub enum AppError {
 
     #[error("Not found: {0}")]
     NotFound(String),
-    
+
+    #[error("Forbidden: {0}")]
+    Forbidden(String),
+
     #[error("Validation error: {0}")]
     Validation(String),
 
@@ -37,6 +40,7 @@ impl IntoResponse for AppError {
             AppError::Serialization(_) => (StatusCode::BAD_REQUEST, "Data format error"),
             AppError::Conflict(ref message, ref _error_code) => (StatusCode::CONFLICT, message.as_str()),
             AppError::NotFound(ref message) => (StatusCode::NOT_FOUND, message.as_str()),
+            AppError::Forbidden(ref message) => (StatusCode::FORBIDDEN, message.as_str()),
             AppError::Validation(ref message) => (StatusCode::BAD_REQUEST, message.as_str()),
             AppError::InsufficientPermissions(ref _permissions) => (StatusCode::FORBIDDEN, "Insufficient permissions"),
             AppError::Internal(ref message) => (StatusCode::INTERNAL_SERVER_ERROR, message.as_str()),

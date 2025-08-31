@@ -6,7 +6,7 @@ use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use validator::Validate;
 
-use crate::models::paginate::{default_limit, default_page, default_sort_order};
+use crate::{models::paginate::{default_limit, default_page, default_sort_order}};
 
 #[derive(Debug, Clone, Serialize, Deserialize, FromRow, Validate)]
 pub struct Employee {
@@ -180,12 +180,38 @@ pub struct EmployeeLevelWithAuthorizations {
     pub authorizations: Vec<EmployeeAuthorization>,
 }
 
+pub struct EmployeeAccreditationRow {
+    pub pk_employee_accreditation_authorization_id: Uuid,
+    pub fk_recipient_employee_id: Uuid,
+    pub fk_employee_level_id: i32,
+    pub fk_authorizing_employee_id: Option<Uuid>,
+    pub start_at: DateTime<Utc>,
+    pub end_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}
+
 #[derive(Debug, Serialize, Deserialize, FromRow)]
 pub struct EmployeeAccreditation {
+    pub accreditation_id: Uuid,
     pub recipient_employee: LightEmployee,
     pub employee_level: EmployeeLevel,
     pub authorizing_employee: Option<LightEmployee>,
     pub start_at: DateTime<Utc>,
     pub end_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AssignAccreditationRequest {
+    pub employee_id: Uuid,
+    pub level_id: i32,
+    pub start_at: DateTime<Utc>,
+    pub end_at: Option<DateTime<Utc>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UpdateAccreditationRequest {
+    pub level_id: i32,
+    pub start_at: DateTime<Utc>,
+    pub end_at: Option<DateTime<Utc>>,
 }

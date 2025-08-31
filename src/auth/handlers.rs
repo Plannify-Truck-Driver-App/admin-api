@@ -2,10 +2,10 @@ use axum::{
     extract::State,
     Json,
 };
-use std::sync::Arc;
+use tracing::debug;
 
 use crate::{
-    auth::{models::{AuthResponse, RefreshTokenRequest}, services::AuthService}, employee::models::{Employee, EmployeeCreate, EmployeeLoginRequest}, errors::app_error::AppError
+    auth::models::{AuthResponse, RefreshTokenRequest}, employee::models::{Employee, EmployeeCreate, EmployeeLoginRequest}, errors::app_error::AppError, middleware::AppState
 };
 use validator::Validate;
 
@@ -15,28 +15,30 @@ fn validate_request<T: Validate>(req: &T) -> Result<(), AppError> {
 }
 
 pub async fn login(
-    State(auth_service): State<Arc<AuthService>>,
+    State(app_state): State<AppState>,
     Json(login): Json<EmployeeLoginRequest>,
 ) -> Result<Json<AuthResponse>, AppError> {
-    let response = auth_service.login(&login).await?;
+    debug!("Logging in user: {}", login.professional_email);
+    let response = app_state.auth_service.login(&login).await?;
     Ok(Json(response))
 }
 
 pub async fn refresh_token(
-    State(auth_service): State<Arc<AuthService>>,
+    State(app_state): State<AppState>,
     Json(refresh_req): Json<RefreshTokenRequest>,
 ) -> Result<Json<AuthResponse>, AppError> {
-    let response = auth_service.refresh_token(&refresh_req).await?;
+    debug!("Refreshing token for token: {}", refresh_req.refresh_token);
+    let response = app_state.auth_service.refresh_token(&refresh_req).await?;
     Ok(Json(response))
 }
 
 pub async fn register(
-    State((_driver_service, auth_service)): State<(Arc<AuthService>, Arc<AuthService>)>,
+    State(app_state): State<AppState>,
     Json(employee_data): Json<EmployeeCreate>,
 ) -> Result<Json<Employee>, AppError> {
     // validate the request content
     validate_request(&employee_data)?;
-    
-    let employee = auth_service.create_employee(&employee_data).await?;
+
+    let employee = app_state.auth_service.create_employee(&employee_data).await?;
     Ok(Json(employee))
 }

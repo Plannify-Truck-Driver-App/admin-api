@@ -2,7 +2,7 @@ use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::{employee::models::{CrudType, Employee, EmployeeAccreditation, EmployeeAuthorization, EmployeeLevel, EmployeeLevelWithAuthorizations, EntityType, GetAllEmployeesQuery, LightEmployee}, errors::app_error::AppError, models::paginate::{PaginateQuery, PaginatedResponse, PaginationInfo}};
+use crate::{employee::models::{AssignAccreditationRequest, CrudType, Employee, EmployeeAccreditation, EmployeeAccreditationRow, EmployeeAuthorization, EmployeeLevel, EmployeeLevelWithAuthorizations, EntityType, GetAllEmployeesQuery, LightEmployee, UpdateAccreditationRequest}, errors::app_error::AppError, models::paginate::{PaginateQuery, PaginatedResponse, PaginationInfo}};
 use futures::stream::StreamExt;
 
 pub struct EmployeeService {
@@ -277,7 +277,7 @@ impl EmployeeService {
         Ok(result)
     }
 
-    pub async fn get_employee_levels_by_employee_id(&self, employee_id: &str) -> Result<Vec<EmployeeLevel>, AppError> {
+    pub async fn get_current_employee_level_by_employee_id(&self, employee_id: &str) -> Result<EmployeeLevel, AppError> {
         let employee_uuid_id: Uuid = Uuid::parse_str(employee_id).expect("Employee ID is not a valid UUID");
 
         let levels = sqlx::query_as!(
@@ -287,12 +287,18 @@ impl EmployeeService {
             FROM employee_levels el
             JOIN employee_accreditation_authorizations eaa ON el.pk_employee_level_id = eaa.fk_employee_level_id
             WHERE eaa.fk_recipient_employee_id = $1
+            AND eaa.start_at <= NOW()
+            AND (eaa.end_at IS NULL OR eaa.end_at > NOW())
             "#,
             employee_uuid_id
         )
         .fetch_all(&self.pool).await?;
 
-        Ok(levels)
+        if levels.is_empty() {
+            return Err(AppError::NotFound("No current employee level found".to_string()));
+        }
+
+        Ok(levels.into_iter().next().unwrap())
     }
 
     pub async fn get_all_employee_levels(&self) -> Result<Vec<EmployeeLevel>, AppError> {
@@ -343,19 +349,11 @@ impl EmployeeService {
                 .fetch_one(&self.pool)
                 .await? as u64;
 
-        struct EmployeeAccreditationRow {
-            fk_recipient_employee_id: Uuid,
-            fk_employee_level_id: i32,
-            fk_authorizing_employee_id: Option<Uuid>,
-            start_at: DateTime<Utc>,
-            end_at: Option<DateTime<Utc>>,
-            created_at: DateTime<Utc>,
-        }
-
         let accreditations_row = sqlx::query_as!(
             EmployeeAccreditationRow,
             r#"
             SELECT
+                eaa.pk_employee_accreditation_authorization_id,
                 eaa.fk_recipient_employee_id,
                 eaa.fk_employee_level_id,
                 eaa.fk_authorizing_employee_id,
@@ -363,7 +361,7 @@ impl EmployeeService {
                 eaa.end_at,
                 eaa.created_at
             FROM employee_accreditation_authorizations eaa
-            ORDER BY created_at ASC
+            ORDER BY eaa.start_at ASC
             LIMIT $1
             OFFSET $2
             "#,
@@ -417,6 +415,7 @@ impl EmployeeService {
                     };
 
                     Some(EmployeeAccreditation {
+                        accreditation_id: row.pk_employee_accreditation_authorization_id,
                         recipient_employee,
                         employee_level,
                         authorizing_employee,
@@ -432,6 +431,265 @@ impl EmployeeService {
         Ok((accreditations, total_count))
     }
 
+    pub async fn get_all_employee_accreditations_from(&self, employee_id: &str, start_date: DateTime<Utc>, end_date: DateTime<Utc>) -> Result<Vec<EmployeeAccreditation>, AppError> {
+        let employee_uuid_id: Uuid = Uuid::parse_str(employee_id).expect("Employee ID is not a valid UUID");
+
+        let accreditations_row = sqlx::query_as!(
+            EmployeeAccreditationRow,
+            r#"
+            SELECT
+                eaa.pk_employee_accreditation_authorization_id,
+                eaa.fk_recipient_employee_id,
+                eaa.fk_employee_level_id,
+                eaa.fk_authorizing_employee_id,
+                eaa.start_at,
+                eaa.end_at,
+                eaa.created_at
+            FROM employee_accreditation_authorizations eaa
+            WHERE eaa.fk_recipient_employee_id = $1
+            AND eaa.start_at <= $3
+            AND (eaa.end_at >= $2 OR eaa.end_at IS NULL)
+            ORDER BY eaa.start_at ASC
+            "#,
+            employee_uuid_id,
+            start_date,
+            end_date
+        )
+        .fetch_all(&self.pool)
+        .await?;
+
+    let accreditations = futures::stream::iter(accreditations_row)
+            .filter_map(|row| {
+                let fk_recipient_employee_id = row.fk_recipient_employee_id;
+                let fk_employee_level_id = row.fk_employee_level_id;
+                let fk_authorizing_employee_id = row.fk_authorizing_employee_id;
+                let start_at = row.start_at;
+                let end_at = row.end_at;
+                let created_at = row.created_at;
+
+                async move {
+                    let recipient_employee = match self.get_light_employee_by_id(&fk_recipient_employee_id.to_string()).await.ok() {
+                        Some(emp) => {
+                            emp
+                        },
+                        None => {
+                            return None;
+                        },
+                    };
+                    
+                    let employee_level = match self.get_employee_level_by_id(fk_employee_level_id).await.ok() {
+                        Some(level) => {
+                            level
+                        },
+                        None => {
+                            return None;
+                        },
+                    };
+                    
+                    let authorizing_employee: Option<LightEmployee> = match fk_authorizing_employee_id {
+                        Some(authorizing_id) => {
+                            match self.get_light_employee_by_id(&authorizing_id.to_string()).await.ok() {
+                                Some(emp) => {
+                                    Some(emp)
+                                },
+                                None => {
+                                    return None;
+                                },
+                            }
+                        },
+                        None => {
+                            None
+                        },
+                    };
+
+                    Some(EmployeeAccreditation {
+                        accreditation_id: row.pk_employee_accreditation_authorization_id,
+                        recipient_employee,
+                        employee_level,
+                        authorizing_employee,
+                        start_at,
+                        end_at,
+                        created_at,
+                    })
+                }
+            })
+            .collect::<Vec<_>>()
+            .await;
+
+        Ok(accreditations)
+    }
+
+    pub async fn assign_accreditation(&self, assign_req: &AssignAccreditationRequest, employee_authorizing_id: &str) -> Result<EmployeeAccreditation, AppError> {
+        let employee_uuid_id: Uuid = assign_req.employee_id;
+
+        if assign_req.start_at < (Utc::now() - chrono::Duration::minutes(5)) {
+            return Err(AppError::Validation("The start date must be in the future.".to_string()));
+        }
+
+        if assign_req.end_at.is_some() && assign_req.end_at.unwrap() <= assign_req.start_at {
+            return Err(AppError::Validation("The end date must be after the start date.".to_string()));
+        }
+        
+        let employee = self.get_light_employee_by_id(&employee_uuid_id.to_string()).await?;
+        
+        let level = self.get_employee_level_by_id(assign_req.level_id).await?;
+
+        let authorizing_employee = self.get_light_employee_by_id(employee_authorizing_id).await?;
+        let authorizing_employee_level = self.get_current_employee_level_by_employee_id(employee_authorizing_id).await?;
+
+        if level.level_index >= authorizing_employee_level.level_index && authorizing_employee_level.level_index != 1 {
+            return Err(AppError::Forbidden("You can't assign a higher or equal level than your own.".to_string()));
+        }
+
+        let existing_accreditations = self.get_all_employee_accreditations_from(&employee_uuid_id.to_string(), assign_req.start_at, assign_req.end_at.unwrap_or(DateTime::<Utc>::MAX_UTC)).await?;
+        if existing_accreditations.len() > 0 {
+            return Err(AppError::Conflict("An accreditation already exists for this employee in the specified time range.".to_string(), "ACCREDITATION_ALREADY_EXISTS_FOR_THIS_PERIOD".to_string()));
+        }
+
+        let accreditation_row = sqlx::query_as!(
+            EmployeeAccreditationRow,
+            r#"
+            INSERT INTO employee_accreditation_authorizations (fk_recipient_employee_id, fk_employee_level_id, fk_authorizing_employee_id, start_at, end_at)
+            VALUES ($1, $2, $3, $4, $5)
+            RETURNING pk_employee_accreditation_authorization_id, fk_recipient_employee_id, fk_employee_level_id, fk_authorizing_employee_id, start_at, end_at, created_at
+            "#,
+            employee_uuid_id,
+            assign_req.level_id,
+            Uuid::parse_str(employee_authorizing_id).expect("Authorizing Employee ID is not a valid UUID"),
+            assign_req.start_at,
+            assign_req.end_at
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        let accreditation = EmployeeAccreditation {
+            accreditation_id: accreditation_row.pk_employee_accreditation_authorization_id,
+            recipient_employee: employee,
+            employee_level: level,
+            authorizing_employee: Some(authorizing_employee),
+            start_at: accreditation_row.start_at,
+            end_at: accreditation_row.end_at,
+            created_at: accreditation_row.created_at,
+        };
+
+        Ok(accreditation)
+    }
+
+    pub async fn get_employee_accreditation_by_id(&self, accreditation_id: &Uuid) -> Result<EmployeeAccreditation, AppError> {
+        let accreditation_row = sqlx::query_as!(
+            EmployeeAccreditationRow,
+            r#"
+            SELECT pk_employee_accreditation_authorization_id, fk_recipient_employee_id, fk_employee_level_id, fk_authorizing_employee_id, start_at, end_at, created_at
+            FROM employee_accreditation_authorizations
+            WHERE pk_employee_accreditation_authorization_id = $1
+            "#,
+            accreditation_id
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        let employee = self.get_light_employee_by_id(&accreditation_row.fk_recipient_employee_id.to_string()).await?;
+        let level = self.get_employee_level_by_id(accreditation_row.fk_employee_level_id).await?;
+        let authorizing_employee = match accreditation_row.fk_authorizing_employee_id {
+            Some(authorizing_id) => Some(self.get_light_employee_by_id(&authorizing_id.to_string()).await?),
+            None => None,
+        };
+
+        let accreditation = EmployeeAccreditation {
+            accreditation_id: accreditation_row.pk_employee_accreditation_authorization_id,
+            recipient_employee: employee,
+            employee_level: level,
+            authorizing_employee,
+            start_at: accreditation_row.start_at,
+            end_at: accreditation_row.end_at,
+            created_at: accreditation_row.created_at,
+        };
+
+        Ok(accreditation)
+    }
+
+    pub async fn update_accreditation(&self, accreditation_id: &Uuid, update_req: &UpdateAccreditationRequest, employee_authorizing_id: &str) -> Result<EmployeeAccreditation, AppError> {
+        if update_req.start_at < (Utc::now() - chrono::Duration::minutes(5)) {
+            return Err(AppError::Validation("The start date must be in the future.".to_string()));
+        }
+
+        if update_req.end_at.is_some() && update_req.end_at.unwrap() <= update_req.start_at {
+            return Err(AppError::Validation("The end date must be after the start date.".to_string()));
+        }
+        
+        let level = self.get_employee_level_by_id(update_req.level_id).await?;
+
+        let authorizing_employee_level = self.get_current_employee_level_by_employee_id(employee_authorizing_id).await?;
+
+        if level.level_index >= authorizing_employee_level.level_index && authorizing_employee_level.level_index != 1 {
+            return Err(AppError::Forbidden("You can't assign a higher or equal level than your own.".to_string()));
+        }
+
+        let accreditation = self.get_employee_accreditation_by_id(accreditation_id).await?;
+
+        let existing_accreditations = self.get_all_employee_accreditations_from(&accreditation.recipient_employee.pk_employee_id.to_string(), update_req.start_at, update_req.end_at.unwrap_or(DateTime::<Utc>::MAX_UTC)).await?;
+        let existing_accreditations: Vec<EmployeeAccreditation> = existing_accreditations.into_iter().filter(|acc| &acc.accreditation_id != accreditation_id).collect();
+        if existing_accreditations.len() > 0 {
+            return Err(AppError::Conflict("An accreditation already exists for this employee in the specified time range.".to_string(), "ACCREDITATION_ALREADY_EXISTS_FOR_THIS_PERIOD".to_string()));
+        }
+
+        let accreditation_row = sqlx::query_as!(
+            EmployeeAccreditationRow,
+            r#"
+            UPDATE employee_accreditation_authorizations
+            SET fk_employee_level_id = $1, start_at = $2, end_at = $3
+            WHERE pk_employee_accreditation_authorization_id = $4
+            RETURNING pk_employee_accreditation_authorization_id, fk_recipient_employee_id, fk_employee_level_id, fk_authorizing_employee_id, start_at, end_at, created_at
+            "#,
+            update_req.level_id,
+            update_req.start_at,
+            update_req.end_at,
+            accreditation_id
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        let accreditation_updated = EmployeeAccreditation {
+            accreditation_id: accreditation_row.pk_employee_accreditation_authorization_id,
+            recipient_employee: self.get_light_employee_by_id(&accreditation_row.fk_recipient_employee_id.to_string()).await?,
+            employee_level: self.get_employee_level_by_id(accreditation_row.fk_employee_level_id).await?,
+            authorizing_employee: match accreditation_row.fk_authorizing_employee_id {
+                Some(authorizing_id) => Some(self.get_light_employee_by_id(&authorizing_id.to_string()).await?),
+                None => None,
+            },
+            start_at: accreditation_row.start_at,
+            end_at: accreditation_row.end_at,
+            created_at: accreditation_row.created_at,
+        };
+
+        Ok(accreditation_updated)
+    }
+
+    pub async fn delete_accreditation(&self, accreditation_id: &Uuid, employee_id: &str) -> Result<(), AppError> {
+        let accreditation = self.get_employee_accreditation_by_id(accreditation_id).await?;
+        let employee_level = self.get_current_employee_level_by_employee_id(employee_id).await?;
+
+        if employee_level.level_index >= accreditation.employee_level.level_index {
+            return Err(AppError::Forbidden("You can't delete an accreditation with a higher or equal level than your own.".to_string()));
+        }
+
+        let result = sqlx::query!(
+            r#"
+            DELETE FROM employee_accreditation_authorizations
+            WHERE pk_employee_accreditation_authorization_id = $1
+            "#,
+            accreditation_id
+        )
+        .execute(&self.pool)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(AppError::NotFound("Accreditation not found".to_string()));
+        }
+
+        Ok(())
+    }
+
     pub async fn get_employee_accreditations_by_employee_id(&self, employee_id: &str, filters: &PaginateQuery) -> Result<(Vec<EmployeeAccreditation>, u64), AppError> {
         let employee_uuid_id: Uuid = Uuid::parse_str(employee_id).expect("Employee ID is not a valid UUID");
 
@@ -440,19 +698,11 @@ impl EmployeeService {
                 .fetch_one(&self.pool)
                 .await? as u64;
 
-        struct EmployeeAccreditationRow {
-            fk_recipient_employee_id: Uuid,
-            fk_employee_level_id: i32,
-            fk_authorizing_employee_id: Option<Uuid>,
-            start_at: DateTime<Utc>,
-            end_at: Option<DateTime<Utc>>,
-            created_at: DateTime<Utc>,
-        }
-
         let accreditations_row = sqlx::query_as!(
             EmployeeAccreditationRow,
             r#"
             SELECT
+                eaa.pk_employee_accreditation_authorization_id,
                 eaa.fk_recipient_employee_id,
                 eaa.fk_employee_level_id,
                 eaa.fk_authorizing_employee_id,
@@ -516,6 +766,7 @@ impl EmployeeService {
                     };
 
                     Some(EmployeeAccreditation {
+                        accreditation_id: row.pk_employee_accreditation_authorization_id,
                         recipient_employee,
                         employee_level,
                         authorizing_employee,

@@ -4,9 +4,8 @@ use axum::{
     Json,
 };
 use tracing::debug;
-use std::sync::Arc;
 
-use crate::{driver::{models::{CreateDriverRequest, Driver, GetAllDriversQuery, UpdateDriverRequest}, services::DriverService}, models::paginate::{PaginatedResponse, PaginationInfo, PAGINATE_MAX_LIMIT}};
+use crate::{driver::{models::{CreateDriverRequest, Driver, GetAllDriversQuery, UpdateDriverRequest}}, middleware::AppState, models::paginate::{PaginatedResponse, PaginationInfo, PAGINATE_MAX_LIMIT}};
 use crate::errors::app_error::AppError;
 use uuid::Uuid;
 use validator::Validate;
@@ -18,7 +17,7 @@ fn validate_request<T: Validate>(req: &T) -> Result<(), AppError> {
 
 pub async fn get_all_drivers(
     Query(filters): Query<GetAllDriversQuery>,
-    State(driver_service): State<Arc<DriverService>>,
+    State(app_state): State<AppState>,
 ) -> Result<Json<PaginatedResponse<Driver>>, AppError> {
     debug!("Get all drivers request: {:?}", filters);
 
@@ -29,9 +28,9 @@ pub async fn get_all_drivers(
     if filters.limit <= 0 || filters.limit > PAGINATE_MAX_LIMIT {
         return Err(AppError::Validation(format!("Limit must be between 1 and {}.", PAGINATE_MAX_LIMIT)));
     }
-    
-    let (drivers, total) = driver_service.get_all_drivers(&filters).await?;
-    
+
+    let (drivers, total) = app_state.driver_service.get_all_drivers(&filters).await?;
+
     let pagination_info = PaginationInfo {
         page: filters.page,
         limit: filters.limit,
@@ -48,16 +47,16 @@ pub async fn get_all_drivers(
 
 pub async fn get_driver_by_id(
     Path(driver_id): Path<String>,
-    State(driver_service): State<Arc<DriverService>>,
+    State(app_state): State<AppState>,
 ) -> Result<Json<Driver>, AppError> {
     let driver_uuid = driver_id.parse::<Uuid>()
         .map_err(|_| AppError::Validation("Driver ID is not valid".to_string()))?;
-    let driver = driver_service.get_driver_by_id(&driver_uuid).await?;
+    let driver = app_state.driver_service.get_driver_by_id(&driver_uuid).await?;
     Ok(Json(driver))
 }
 
 pub async fn create_driver(
-    State(driver_service): State<Arc<DriverService>>,
+    State(app_state): State<AppState>,
     Json(create_req): Json<CreateDriverRequest>,
 ) -> Result<(StatusCode, Json<Driver>), AppError> {
     debug!("Create driver request: {:?}", create_req);
@@ -65,18 +64,18 @@ pub async fn create_driver(
     validate_request(&create_req).map_err(|e| AppError::Validation(e.to_string()))?;
     
     // check if the email already exists
-    if driver_service.email_exists(&create_req.email).await? {
+    if app_state.driver_service.email_exists(&create_req.email).await? {
         return Err(AppError::Conflict("A driver with this email already exists".to_string(), "DRIVER_EMAIL_ALREADY_EXISTS".to_string()));
     }
-    
-    let created_driver = driver_service.create_driver(&create_req).await?;
-    
+
+    let created_driver = app_state.driver_service.create_driver(&create_req).await?;
+
     Ok((StatusCode::CREATED, Json(created_driver)))
 }
 
 pub async fn update_driver(
     Path(driver_id): Path<String>,
-    State(driver_service): State<Arc<DriverService>>,
+    State(app_state): State<AppState>,
     Json(update_req): Json<UpdateDriverRequest>,
 ) -> Result<Json<Driver>, AppError> {
     let driver_uuid = driver_id.parse::<Uuid>()
@@ -85,30 +84,30 @@ pub async fn update_driver(
     validate_request(&update_req)?;
     
     // check if the user exists
-    let _existing_driver = driver_service.get_driver_by_id(&driver_uuid).await?;
-    
+    let _existing_driver = app_state.driver_service.get_driver_by_id(&driver_uuid).await?;
+
     // if the email is modified, check if it already exists
     if let Some(ref email) = update_req.email {
-        if driver_service.email_exists_except_driver(email, &driver_uuid).await? {
+        if app_state.driver_service.email_exists_except_driver(email, &driver_uuid).await? {
             return Err(AppError::Conflict("An other driver already uses this email".to_string(), "DRIVER_EMAIL_ALREADY_EXISTS".to_string()));
         }
     }
-    
-    let updated_driver = driver_service.update_driver(&driver_uuid, &update_req).await?;
+
+    let updated_driver = app_state.driver_service.update_driver(&driver_uuid, &update_req).await?;
     Ok(Json(updated_driver))
 }
 
 pub async fn deactivate_driver(
     Path(driver_id): Path<String>,
-    State(driver_service): State<Arc<DriverService>>,
+    State(app_state): State<AppState>,
 ) -> Result<StatusCode, AppError> {
     let driver_uuid = driver_id.parse::<Uuid>()
         .map_err(|_| AppError::Validation("Driver ID is not valid".to_string()))?;
     
     // check if the user exists
-    let _existing_driver = driver_service.get_driver_by_id(&driver_uuid).await?;
-    
-    driver_service.deactivate_driver(&driver_uuid).await?;
+    let _existing_driver = app_state.driver_service.get_driver_by_id(&driver_uuid).await?;
+
+    app_state.driver_service.deactivate_driver(&driver_uuid).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 

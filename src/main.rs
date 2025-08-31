@@ -1,10 +1,11 @@
 use axum::Router;
 use sqlx::PgPool;
+use tracing_subscriber::EnvFilter;
 use std::sync::Arc;
 use tower_http::{cors::CorsLayer, trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer}};
 use tracing::info;
 
-use crate::{auth::{routes::public_auth_routes, services::AuthService}, driver::{routes::protected_driver_routes, services::DriverService}, employee::{routes::protected_employees_routes, services::EmployeeService}};
+use crate::{auth::{routes::public_auth_routes, services::AuthService}, driver::{routes::protected_driver_routes, services::DriverService}, employee::{routes::protected_employees_routes, services::EmployeeService}, middleware::AppState};
 
 mod models;
 mod errors;
@@ -16,8 +17,10 @@ mod employee;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize logging
-    tracing_subscriber::fmt::init();
-    
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
+
     // Load environment variables
     dotenvy::dotenv().ok();
     
@@ -26,28 +29,29 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .expect("DATABASE_URL must be defined");
     
     let pool = PgPool::connect(&database_url).await?;
+    info!("Database connection established");
+
     let jwt_secret = std::env::var("JWT_SECRET")
         .expect("JWT_SECRET must be defined");
     
     let driver_service = Arc::new(DriverService::new(pool.clone()));
     let auth_service = Arc::new(AuthService::new(pool.clone()));
     let employee_service = Arc::new(EmployeeService::new(pool.clone()));
-    
-    info!("Database connection established");
-    
+
+    let app_state = AppState {
+        auth_service,
+        employee_service,
+        driver_service,
+        jwt_secret,
+    };
+
     // CORS configuration
     let cors = CorsLayer::permissive();
 
     let admin_router = Router::new()
-        .merge(public_auth_routes(auth_service.clone()))
-        .merge(protected_driver_routes(
-            jwt_secret.clone(),
-            driver_service.clone(),
-        ))
-        .merge(protected_employees_routes(
-            jwt_secret.clone(),
-            employee_service.clone(),
-        ));
+        .merge(public_auth_routes(app_state.clone()))
+        .merge(protected_driver_routes(app_state.clone()))
+        .merge(protected_employees_routes(app_state.clone()));
 
     let app = Router::new()
         .nest("/admin", admin_router)
