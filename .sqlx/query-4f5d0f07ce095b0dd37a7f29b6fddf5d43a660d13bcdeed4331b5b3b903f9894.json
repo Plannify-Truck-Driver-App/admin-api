@@ -1,0 +1,69 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO employee_authorization_derogations (fk_recipient_employee_id, fk_employee_authorization_type_id, fk_authorizing_employee_id, derogation_reason, start_at, end_at)\n            VALUES ($1, $2, $3, $4, $5, $6)\n            RETURNING pk_employee_authorization_derogation_id, fk_recipient_employee_id, fk_employee_authorization_type_id, fk_authorizing_employee_id, derogation_reason, start_at, end_at, created_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pk_employee_authorization_derogation_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "fk_recipient_employee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "fk_employee_authorization_type_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "fk_authorizing_employee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "derogation_reason",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "start_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "end_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4",
+        "Uuid",
+        "Varchar",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "4f5d0f07ce095b0dd37a7f29b6fddf5d43a660d13bcdeed4331b5b3b903f9894"
+}

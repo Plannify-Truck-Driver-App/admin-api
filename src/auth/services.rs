@@ -132,24 +132,36 @@ impl AuthService {
     pub async fn get_employee_permissions(&self, employee_id: Uuid) -> Result<Vec<i32>, AppError> {
         let permissions = sqlx::query!(
             r#"
-            SELECT DISTINCT
-                eat.pk_employee_authorization_type_id as authorization_id
-            FROM employee_accreditation_authorizations eaa
-            JOIN employee_levels el ON eaa.fk_employee_level_id = el.pk_employee_level_id
-            JOIN link_employee_authorization lea ON el.pk_employee_level_id = lea.fk_employee_level_id
-            JOIN employee_authorization_types eat ON lea.fk_employee_authorization_type_id = eat.pk_employee_authorization_type_id
-            JOIN employee_authorizations ea ON eat.fk_employee_authorization_id = ea.pk_employee_authorization_id
-            WHERE eaa.fk_recipient_employee_id = $1
-                AND (eaa.end_at IS NULL OR eaa.end_at > NOW())
+            SELECT authorization_id
+            FROM (
+                SELECT eat.pk_employee_authorization_type_id as authorization_id
+                FROM employee_accreditation_authorizations eaa
+                JOIN employee_levels el ON eaa.fk_employee_level_id = el.pk_employee_level_id
+                JOIN link_employee_authorization lea ON el.pk_employee_level_id = lea.fk_employee_level_id
+                JOIN employee_authorization_types eat ON lea.fk_employee_authorization_type_id = eat.pk_employee_authorization_type_id
+                JOIN employee_authorizations ea ON eat.fk_employee_authorization_id = ea.pk_employee_authorization_id
+                WHERE eaa.fk_recipient_employee_id = $1
                 AND eaa.start_at <= NOW()
-            ORDER BY eat.pk_employee_authorization_type_id
+                AND (eaa.end_at IS NULL OR eaa.end_at > NOW())
+
+                UNION
+
+                SELECT ead.fk_employee_authorization_type_id as authorization_id
+                FROM employee_authorization_derogations ead
+                WHERE ead.fk_recipient_employee_id = $1
+                AND ead.start_at <= NOW()
+                AND ead.end_at > NOW()
+            )
+            ORDER BY authorization_id
             "#,
             employee_id
         )
         .fetch_all(&self.pool)
         .await?;
         
-        let permission_ids: Vec<i32> = permissions.iter().map(|p| p.authorization_id).collect();
+        let permission_ids: Vec<i32> = permissions.iter()
+            .filter_map(|p| p.authorization_id)
+            .collect();
         
         Ok(permission_ids)
     }

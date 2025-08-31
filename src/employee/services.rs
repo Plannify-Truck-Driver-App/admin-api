@@ -1,8 +1,9 @@
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
+use tracing::debug;
 use uuid::Uuid;
 
-use crate::{employee::models::{AssignAccreditationRequest, CrudType, Employee, EmployeeAccreditation, EmployeeAccreditationRow, EmployeeAuthorization, EmployeeLevel, EmployeeLevelWithAuthorizations, EntityType, GetAllEmployeesQuery, LightEmployee, UpdateAccreditationRequest}, errors::app_error::AppError, models::paginate::{PaginateQuery, PaginatedResponse, PaginationInfo}};
+use crate::{auth::services::AuthService, employee::models::{AssignAccreditationRequest, CreateEmployeeDerogationRequest, CrudType, Employee, EmployeeAccreditation, EmployeeAccreditationRow, EmployeeAuthorization, EmployeeDerogation, EmployeeDerogationRow, EmployeeLevel, EmployeeLevelWithAuthorizations, EntityType, GetAllEmployeesQuery, LightEmployee, UpdateAccreditationRequest}, errors::app_error::AppError, models::paginate::{PaginateQuery, PaginatedResponse, PaginationInfo}};
 use futures::stream::StreamExt;
 
 pub struct EmployeeService {
@@ -241,6 +242,64 @@ impl EmployeeService {
         Ok(result)
     }
 
+    pub async fn get_employee_authorization_by_id(&self, authorization_id: i32) -> Result<EmployeeAuthorization, AppError> {
+        let authorization = sqlx::query!(
+            r#"
+            SELECT eat.pk_employee_authorization_type_id, ea.feature_code as authorization_feature_code, ea.authorization_index as authorization_index, eac.name_code as category_name_code, eac.entity_type as "entity_type: String", eac.category_index, eat.crud_type as "crud_type: String", eat.description
+            FROM employee_authorizations ea
+            JOIN employee_authorization_categories eac ON ea.fk_employee_authorization_category_id = eac.pk_employee_authorization_category_id
+            JOIN employee_authorization_types eat ON ea.pk_employee_authorization_id = eat.fk_employee_authorization_id
+            WHERE ea.pk_employee_authorization_id = $1
+            "#,
+            authorization_id
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        let entity_type = authorization.entity_type.parse::<EntityType>().map_err(|_| AppError::NotFound("Entity type not found".to_string()))?;
+        let crud_type = authorization.crud_type.ok_or(AppError::NotFound("CRUD type not found".to_string()))?.parse::<CrudType>().map_err(|_| AppError::NotFound("CRUD type not found".to_string()))?;
+
+        Ok(EmployeeAuthorization {
+            pk_employee_authorization_id: authorization.pk_employee_authorization_type_id,
+            authorization_feature_code: authorization.authorization_feature_code,
+            authorization_index: authorization.authorization_index,
+            category_name_code: authorization.category_name_code,
+            category_entity_type: entity_type,
+            category_index: authorization.category_index,
+            crud_type,
+            description: authorization.description,
+        })
+    }
+
+    pub async fn get_employee_authorization_by_type_id(&self, type_id: i32) -> Result<EmployeeAuthorization, AppError> {
+        let authorization = sqlx::query!(
+            r#"
+            SELECT eat.pk_employee_authorization_type_id, ea.feature_code as authorization_feature_code, ea.authorization_index as authorization_index, eac.name_code as category_name_code, eac.entity_type as "entity_type: String", eac.category_index, eat.crud_type as "crud_type: String", eat.description
+            FROM employee_authorizations ea
+            JOIN employee_authorization_categories eac ON ea.fk_employee_authorization_category_id = eac.pk_employee_authorization_category_id
+            JOIN employee_authorization_types eat ON ea.pk_employee_authorization_id = eat.fk_employee_authorization_id
+            WHERE eat.pk_employee_authorization_type_id = $1
+            "#,
+            type_id
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        let entity_type = authorization.entity_type.parse::<EntityType>().map_err(|_| AppError::NotFound("Entity type not found".to_string()))?;
+        let crud_type = authorization.crud_type.ok_or(AppError::NotFound("CRUD type not found".to_string()))?.parse::<CrudType>().map_err(|_| AppError::NotFound("CRUD type not found".to_string()))?;
+
+        Ok(EmployeeAuthorization {
+            pk_employee_authorization_id: authorization.pk_employee_authorization_type_id,
+            authorization_feature_code: authorization.authorization_feature_code,
+            authorization_index: authorization.authorization_index,
+            category_name_code: authorization.category_name_code,
+            category_entity_type: entity_type,
+            category_index: authorization.category_index,
+            crud_type,
+            description: authorization.description,
+        })
+    }
+
     pub async fn get_all_employee_authorizations_by_level_id(&self, level_id: i32) -> Result<Vec<EmployeeAuthorization>, AppError> {
         let authorizations = sqlx::query!(
             r#"
@@ -324,7 +383,9 @@ impl EmployeeService {
             "#,
             level_id
         )
-        .fetch_optional(&self.pool).await?;
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|_| AppError::NotFound("Level not found".to_string()))?;
 
         if level.is_none() {
             return Err(AppError::NotFound("Level not found".to_string()));
@@ -586,7 +647,8 @@ impl EmployeeService {
             accreditation_id
         )
         .fetch_one(&self.pool)
-        .await?;
+        .await
+        .map_err(|_| AppError::NotFound("Accreditation not found".to_string()))?;
 
         let employee = self.get_light_employee_by_id(&accreditation_row.fk_recipient_employee_id.to_string()).await?;
         let level = self.get_employee_level_by_id(accreditation_row.fk_employee_level_id).await?;
@@ -780,5 +842,197 @@ impl EmployeeService {
             .await;
 
         Ok((accreditations, total_count))
+    }
+
+    pub async fn get_all_employee_derogations(&self, filters: &PaginateQuery) -> Result<(Vec<EmployeeDerogation>, u64), AppError> {
+        let total_count = sqlx::query_scalar::<_, i64>("SELECT COUNT(*) as count FROM employee_authorization_derogations")
+                .fetch_one(&self.pool)
+                .await? as u64;
+
+        let derogations_row = sqlx::query_as!(
+            EmployeeDerogationRow,
+            r#"
+            SELECT
+                ead.pk_employee_authorization_derogation_id,
+                ead.fk_recipient_employee_id,
+                ead.fk_employee_authorization_type_id,
+                ead.fk_authorizing_employee_id,
+                ead.derogation_reason,
+                ead.start_at,
+                ead.end_at,
+                ead.created_at
+            FROM employee_authorization_derogations ead
+            ORDER BY ead.start_at ASC
+            LIMIT $1
+            OFFSET $2
+            "#,
+            filters.limit as i64,
+            ((filters.page - 1) * filters.limit) as i64
+        )
+        .fetch_all(&self.pool).await?;
+
+        let derogations = futures::stream::iter(derogations_row)
+            .filter_map(|row| {
+                let fk_recipient_employee_id = row.fk_recipient_employee_id;
+                let fk_employee_authorization_type_id = row.fk_employee_authorization_type_id;
+                let fk_authorizing_employee_id = row.fk_authorizing_employee_id;
+                let start_at = row.start_at;
+                let end_at = row.end_at;
+                let created_at = row.created_at;
+
+                async move {
+                    let recipient_employee = match self.get_light_employee_by_id(&fk_recipient_employee_id.to_string()).await.ok() {
+                        Some(emp) => {
+                            emp
+                        },
+                        None => {
+                            return None;
+                        },
+                    };
+
+                    let employee_authorization = match self.get_employee_authorization_by_type_id(fk_employee_authorization_type_id).await.ok() {
+                        Some(auth) => {
+                            auth
+                        },
+                        None => {
+                            return None;
+                        },
+                    };
+
+                    let authorizing_employee: LightEmployee = match self.get_light_employee_by_id(&fk_authorizing_employee_id.to_string()).await.ok() {
+                        Some(emp) => {
+                            emp
+                        },
+                        None => {
+                            return None;
+                        },
+                    };
+
+                    Some(EmployeeDerogation {
+                        pk_derogation_id: row.pk_employee_authorization_derogation_id,
+                        recipient_employee,
+                        employee_authorization,
+                        authorizing_employee,
+                        derogation_reason: row.derogation_reason,
+                        start_at,
+                        end_at,
+                        created_at,
+                    })
+                }
+            })
+            .collect::<Vec<_>>()
+            .await;
+
+        Ok((derogations, total_count))
+    }
+
+    pub async fn get_employee_derogation_by_id(&self, id: i32) -> Result<EmployeeDerogation, AppError> {
+        let row = sqlx::query_as!(
+            EmployeeDerogationRow,
+            r#"
+            SELECT
+                ead.pk_employee_authorization_derogation_id,
+                ead.fk_recipient_employee_id,
+                ead.fk_employee_authorization_type_id,
+                ead.fk_authorizing_employee_id,
+                ead.derogation_reason,
+                ead.start_at,
+                ead.end_at,
+                ead.created_at
+            FROM employee_authorization_derogations ead
+            WHERE ead.pk_employee_authorization_derogation_id = $1
+            "#,
+            id
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|_| AppError::NotFound("Derogation not found".to_string()))?;
+
+        let recipient_employee = self.get_light_employee_by_id(&row.fk_recipient_employee_id.to_string()).await?;
+        let employee_authorization = self.get_employee_authorization_by_type_id(row.fk_employee_authorization_type_id).await?;
+        let authorizing_employee = self.get_light_employee_by_id(&row.fk_authorizing_employee_id.to_string()).await?;
+
+        Ok(EmployeeDerogation {
+            pk_derogation_id: row.pk_employee_authorization_derogation_id,
+            recipient_employee,
+            employee_authorization,
+            authorizing_employee,
+            derogation_reason: row.derogation_reason,
+            start_at: row.start_at,
+            end_at: row.end_at,
+            created_at: row.created_at,
+        })
+    }
+
+    pub async fn create_employee_derogation(&self, auth_service: &AuthService, request: &CreateEmployeeDerogationRequest, employee_authorizing_id: &str) -> Result<EmployeeDerogation, AppError> {
+        if request.start_at < (Utc::now() - chrono::Duration::minutes(5)) {
+            return Err(AppError::Validation("The start date must be in the future.".to_string()));
+        }
+
+        if request.end_at <= request.start_at {
+            return Err(AppError::Validation("The end date must be after the start date.".to_string()));
+        }
+
+        let employee_recipient_uuid = Uuid::parse_str(&request.recipient_employee_id.to_string()).expect("Recipient Employee ID is not a valid UUID");
+        let employee_authorizing_uuid = Uuid::parse_str(employee_authorizing_id).expect("Authorizing Employee ID is not a valid UUID");
+
+        let employee_recipient_authorizations = auth_service.get_employee_permissions(employee_recipient_uuid).await?;
+        if employee_recipient_authorizations.contains(&request.employee_authorization_type_id) {
+            return Err(AppError::Conflict("The employee already has this authorization.".to_string(), "HAS_ALREADY_AUTHORIZATION".to_string()));
+        }
+
+        let recipient_employee = self.get_light_employee_by_id(&request.recipient_employee_id.to_string()).await?;
+        let employee_authorization = self.get_employee_authorization_by_type_id(request.employee_authorization_type_id).await?;
+        let authorizing_employee = self.get_light_employee_by_id(employee_authorizing_id).await?;
+        let authorizing_employee_authorizations = auth_service.get_employee_permissions(employee_authorizing_uuid).await?;
+
+        if !authorizing_employee_authorizations.contains(&request.employee_authorization_type_id) {
+            return Err(AppError::Forbidden("You can't assign a derogation authorization that you don't have.".to_string()));
+        }
+
+        let derogation_row = sqlx::query_as!(
+            EmployeeDerogationRow,
+            r#"
+            INSERT INTO employee_authorization_derogations (fk_recipient_employee_id, fk_employee_authorization_type_id, fk_authorizing_employee_id, derogation_reason, start_at, end_at)
+            VALUES ($1, $2, $3, $4, $5, $6)
+            RETURNING pk_employee_authorization_derogation_id, fk_recipient_employee_id, fk_employee_authorization_type_id, fk_authorizing_employee_id, derogation_reason, start_at, end_at, created_at
+            "#,
+            request.recipient_employee_id,
+            request.employee_authorization_type_id,
+            Uuid::parse_str(employee_authorizing_id).expect("Authorizing Employee ID is not a valid UUID"),
+            request.derogation_reason,
+            request.start_at,
+            request.end_at
+        )
+        .fetch_one(&self.pool)
+        .await?;
+
+        Ok(EmployeeDerogation {
+            pk_derogation_id: derogation_row.pk_employee_authorization_derogation_id,
+            recipient_employee,
+            employee_authorization,
+            authorizing_employee,
+            derogation_reason: derogation_row.derogation_reason,
+            start_at: derogation_row.start_at,
+            end_at: derogation_row.end_at,
+            created_at: derogation_row.created_at,
+        })
+    }
+
+    pub async fn delete_employee_derogation_by_id(&self, id: i32, auth_service: &AuthService, employee_id: &str) -> Result<(), AppError> {
+        let employee_authorizing_uuid = Uuid::parse_str(employee_id).expect("Authorizing Employee ID is not a valid UUID");
+        let employee_authorizing_authorizations = auth_service.get_employee_permissions(employee_authorizing_uuid).await?;
+
+        let derogation = self.get_employee_derogation_by_id(id).await?;
+
+        if !employee_authorizing_authorizations.contains(&derogation.employee_authorization.pk_employee_authorization_id) {
+            return Err(AppError::Forbidden("You can't delete a derogation that you don't have.".to_string()));
+        }
+
+        sqlx::query!("DELETE FROM employee_authorization_derogations WHERE pk_employee_authorization_derogation_id = $1", id)
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
     }
 }

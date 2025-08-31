@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                ead.pk_employee_authorization_derogation_id,\n                ead.fk_recipient_employee_id,\n                ead.fk_employee_authorization_type_id,\n                ead.fk_authorizing_employee_id,\n                ead.derogation_reason,\n                ead.start_at,\n                ead.end_at,\n                ead.created_at\n            FROM employee_authorization_derogations ead\n            WHERE ead.pk_employee_authorization_derogation_id = $1\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pk_employee_authorization_derogation_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "fk_recipient_employee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "fk_employee_authorization_type_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "fk_authorizing_employee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "derogation_reason",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "start_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "end_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 7,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "c81508105af96965cb593c40651fdfae62d423517a44fbb7b2aa87bb4d013f48"
+}

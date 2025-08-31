@@ -5,7 +5,7 @@ use crate::{
     employee::handlers::{
             accreditation_handlers::{
                 assign_accreditation, delete_accreditation, get_all_accreditations, get_all_accreditations_by_employee_id, update_accreditation
-            }, authorization_handlers::get_all_authorizations, employee_handlers::{
+            }, authorization_handlers::get_all_authorizations, derogation_handlers::{create_derogation, delete_derogation, get_all_derogations, get_derogation_by_id}, employee_handlers::{
                 get_all_employees, get_employee_by_id
             }, level_handlers::{
                 get_all_levels, get_level_by_id
@@ -29,6 +29,10 @@ pub fn protected_employees_routes(
         .route("/employees/accreditations/{id}", put(update_accreditation).route_layer(from_fn(with_required_permissions(vec![36]))))
         .route("/employees/accreditations/{id}", delete(delete_accreditation).route_layer(from_fn(with_required_permissions(vec![37]))))
         .route("/employees/{id}/accreditations", get(get_all_accreditations_by_employee_id).route_layer(from_fn(with_required_permissions(vec![34]))))
+        .route("/employees/derogations", get(get_all_derogations).route_layer(from_fn(with_required_permissions(vec![38]))))
+        .route("/employees/derogations/{id}", get(get_derogation_by_id).route_layer(from_fn(with_required_permissions(vec![38]))))
+        .route("/employees/derogations", post(create_derogation).route_layer(from_fn(with_required_permissions(vec![39]))))
+        .route("/employees/derogations/{id}", delete(delete_derogation).route_layer(from_fn(with_required_permissions(vec![41]))))
         .layer(from_fn_with_state(
             app_state.clone(),
             auth_middleware,

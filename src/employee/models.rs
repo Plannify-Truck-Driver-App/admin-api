@@ -215,3 +215,35 @@ pub struct UpdateAccreditationRequest {
     pub start_at: DateTime<Utc>,
     pub end_at: Option<DateTime<Utc>>,
 }
+
+#[derive(Debug, Serialize, Deserialize, FromRow)]
+pub struct EmployeeDerogation {
+    pub pk_derogation_id: i32,
+    pub recipient_employee: LightEmployee,
+    pub employee_authorization: EmployeeAuthorization,
+    pub authorizing_employee: LightEmployee,
+    pub derogation_reason: Option<String>,
+    pub start_at: DateTime<Utc>,
+    pub end_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+}
+
+pub struct EmployeeDerogationRow {
+    pub pk_employee_authorization_derogation_id: i32,
+    pub fk_recipient_employee_id: Uuid,
+    pub fk_employee_authorization_type_id: i32,
+    pub fk_authorizing_employee_id: Uuid,
+    pub derogation_reason: Option<String>,
+    pub start_at: DateTime<Utc>,
+    pub end_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateEmployeeDerogationRequest {
+    pub recipient_employee_id: Uuid,
+    pub employee_authorization_type_id: i32,
+    pub derogation_reason: Option<String>,
+    pub start_at: DateTime<Utc>,
+    pub end_at: DateTime<Utc>,
+}

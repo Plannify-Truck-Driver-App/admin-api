@@ -12,6 +12,7 @@ INSERT INTO employee_authorizations (pk_employee_authorization_id, fk_employee_a
 INSERT INTO employee_authorizations (pk_employee_authorization_id, fk_employee_authorization_category_id, feature_code, authorization_index) VALUES (9, 2, 'EMPLOYEE_AUTHORIZATION_INFORMATIONS', 4);
 INSERT INTO employee_authorizations (pk_employee_authorization_id, fk_employee_authorization_category_id, feature_code, authorization_index) VALUES (10, 2, 'EMPLOYEE_LEVEL_INFORMATIONS', 5);
 INSERT INTO employee_authorizations (pk_employee_authorization_id, fk_employee_authorization_category_id, feature_code, authorization_index) VALUES (11, 2, 'EMPLOYEE_ACCREDITATION_INFORMATIONS', 6);
+INSERT INTO employee_authorizations (pk_employee_authorization_id, fk_employee_authorization_category_id, feature_code, authorization_index) VALUES (12, 2, 'EMPLOYEEDEROGATION_INFORMATIONS', 7);
 
 INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (1, 1, 'R', 'Read all driver informations');
 INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (2, 1, 'C', 'Create a new driver');
@@ -51,6 +52,10 @@ INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_
 INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (35, 11, 'C', 'Create a new employee accreditation');
 INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (36, 11, 'U', 'Update an employee accreditation');
 INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (37, 11, 'D', 'Delete an employee accreditation');
+INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (38, 12, 'R', 'Read employee derogations');
+INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (39, 12, 'C', 'Create a new employee derogation');
+INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (40, 12, 'U', 'Update an employee derogation');
+INSERT INTO employee_authorization_types (pk_employee_authorization_type_id, fk_employee_authorization_id, crud_type, description) VALUES (41, 12, 'D', 'Delete an employee derogation');
 
 INSERT INTO employee_levels (pk_employee_level_id, level_index, level_label) VALUES (1, 1, 'ADMIN');
 INSERT INTO employee_levels (pk_employee_level_id, level_index, level_label) VALUES (2, 2, 'SUPPORT');
@@ -92,6 +97,10 @@ INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_autho
 INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (1, 35);
 INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (1, 36);
 INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (1, 37);
+INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (1, 38);
+INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (1, 39);
+INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (1, 40);
+INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (1, 41);
 
 INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (2, 1);
 INSERT INTO link_employee_authorization (fk_employee_level_id, fk_employee_authorization_type_id) VALUES (2, 2);

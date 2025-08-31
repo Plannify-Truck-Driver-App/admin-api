@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT authorization_id\n            FROM (\n                SELECT eat.pk_employee_authorization_type_id as authorization_id\n                FROM employee_accreditation_authorizations eaa\n                JOIN employee_levels el ON eaa.fk_employee_level_id = el.pk_employee_level_id\n                JOIN link_employee_authorization lea ON el.pk_employee_level_id = lea.fk_employee_level_id\n                JOIN employee_authorization_types eat ON lea.fk_employee_authorization_type_id = eat.pk_employee_authorization_type_id\n                JOIN employee_authorizations ea ON eat.fk_employee_authorization_id = ea.pk_employee_authorization_id\n                WHERE eaa.fk_recipient_employee_id = $1\n                AND eaa.start_at <= NOW()\n                AND (eaa.end_at IS NULL OR eaa.end_at > NOW())\n\n                UNION\n\n                SELECT ead.fk_employee_authorization_type_id as authorization_id\n                FROM employee_authorization_derogations ead\n                WHERE ead.fk_recipient_employee_id = $1\n                AND ead.start_at <= NOW()\n                AND ead.end_at > NOW()\n            )\n            ORDER BY authorization_id\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "authorization_id",
+        "type_info": "Int4"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "649dcc0daa29ebcddbd54171ca762e60c4b53a170bd66ae36b834dc3832e1a07"
+}

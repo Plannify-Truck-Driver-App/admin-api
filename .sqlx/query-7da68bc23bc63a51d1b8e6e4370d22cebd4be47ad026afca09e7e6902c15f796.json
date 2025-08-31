@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "DELETE FROM employee_authorization_derogations WHERE pk_employee_authorization_derogation_id = $1",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7da68bc23bc63a51d1b8e6e4370d22cebd4be47ad026afca09e7e6902c15f796"
+}
