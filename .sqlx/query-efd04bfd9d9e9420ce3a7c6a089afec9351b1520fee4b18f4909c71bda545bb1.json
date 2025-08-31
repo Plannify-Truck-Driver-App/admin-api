@@ -1,0 +1,60 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                eaa.pk_employee_accreditation_authorization_id,\n                eaa.fk_recipient_employee_id,\n                eaa.fk_employee_level_id,\n                eaa.fk_authorizing_employee_id,\n                eaa.start_at,\n                eaa.end_at,\n                eaa.created_at\n            FROM employee_accreditation_authorizations eaa\n            WHERE eaa.fk_recipient_employee_id = $1\n            AND eaa.start_at <= $3\n            AND (eaa.end_at >= $2 OR eaa.end_at IS NULL)\n            ORDER BY eaa.start_at ASC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pk_employee_accreditation_authorization_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "fk_recipient_employee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "fk_employee_level_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "fk_authorizing_employee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "start_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "end_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "efd04bfd9d9e9420ce3a7c6a089afec9351b1520fee4b18f4909c71bda545bb1"
+}

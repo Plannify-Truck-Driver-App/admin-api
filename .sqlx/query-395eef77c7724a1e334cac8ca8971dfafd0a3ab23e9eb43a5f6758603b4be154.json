@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT el.pk_employee_level_id, el.level_index, el.level_label\n            FROM employee_levels el\n            JOIN employee_accreditation_authorizations eaa ON el.pk_employee_level_id = eaa.fk_employee_level_id\n            WHERE eaa.fk_recipient_employee_id = $1\n            ",
+  "query": "\n            SELECT el.pk_employee_level_id, el.level_index, el.level_label\n            FROM employee_levels el\n            JOIN employee_accreditation_authorizations eaa ON el.pk_employee_level_id = eaa.fk_employee_level_id\n            WHERE eaa.fk_recipient_employee_id = $1\n            AND eaa.start_at <= NOW()\n            AND (eaa.end_at IS NULL OR eaa.end_at > NOW())\n            ",
   "describe": {
     "columns": [
       {
@@ -30,5 +30,5 @@
       false
     ]
   },
-  "hash": "e0d543ac0dbc8e41262a06fd7d65aa8666601bf72931593489907515077b55be"
+  "hash": "395eef77c7724a1e334cac8ca8971dfafd0a3ab23e9eb43a5f6758603b4be154"
 }

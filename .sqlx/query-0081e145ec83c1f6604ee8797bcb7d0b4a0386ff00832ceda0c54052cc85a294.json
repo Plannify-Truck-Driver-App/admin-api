@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM employee_accreditation_authorizations\n            WHERE pk_employee_accreditation_authorization_id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0081e145ec83c1f6604ee8797bcb7d0b4a0386ff00832ceda0c54052cc85a294"
+}

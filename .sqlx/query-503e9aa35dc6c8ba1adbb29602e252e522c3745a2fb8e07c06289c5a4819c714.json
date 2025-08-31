@@ -1,0 +1,62 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO employee_accreditation_authorizations (fk_recipient_employee_id, fk_employee_level_id, fk_authorizing_employee_id, start_at, end_at)\n            VALUES ($1, $2, $3, $4, $5)\n            RETURNING pk_employee_accreditation_authorization_id, fk_recipient_employee_id, fk_employee_level_id, fk_authorizing_employee_id, start_at, end_at, created_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pk_employee_accreditation_authorization_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "fk_recipient_employee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "fk_employee_level_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "fk_authorizing_employee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "start_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "end_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Int4",
+        "Uuid",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "503e9aa35dc6c8ba1adbb29602e252e522c3745a2fb8e07c06289c5a4819c714"
+}

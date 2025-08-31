@@ -1,0 +1,61 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE employee_accreditation_authorizations\n            SET fk_employee_level_id = $1, start_at = $2, end_at = $3\n            WHERE pk_employee_accreditation_authorization_id = $4\n            RETURNING pk_employee_accreditation_authorization_id, fk_recipient_employee_id, fk_employee_level_id, fk_authorizing_employee_id, start_at, end_at, created_at\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "pk_employee_accreditation_authorization_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "fk_recipient_employee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "fk_employee_level_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 3,
+        "name": "fk_authorizing_employee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 4,
+        "name": "start_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "end_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Timestamptz",
+        "Timestamptz",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false
+    ]
+  },
+  "hash": "7ded65ddeed68f9c2ce9274211fbcfaf3fadee0720ffd2a469ebe2bed6472e0c"
+}

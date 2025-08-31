@@ -1,46 +1,51 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT\n                eaa.fk_recipient_employee_id,\n                eaa.fk_employee_level_id,\n                eaa.fk_authorizing_employee_id,\n                eaa.start_at,\n                eaa.end_at,\n                eaa.created_at\n            FROM employee_accreditation_authorizations eaa\n            ORDER BY created_at ASC\n            LIMIT $1\n            OFFSET $2\n            ",
+  "query": "\n            SELECT pk_employee_accreditation_authorization_id, fk_recipient_employee_id, fk_employee_level_id, fk_authorizing_employee_id, start_at, end_at, created_at\n            FROM employee_accreditation_authorizations\n            WHERE pk_employee_accreditation_authorization_id = $1\n            ",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "fk_recipient_employee_id",
+        "name": "pk_employee_accreditation_authorization_id",
         "type_info": "Uuid"
       },
       {
         "ordinal": 1,
+        "name": "fk_recipient_employee_id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
         "name": "fk_employee_level_id",
         "type_info": "Int4"
       },
       {
-        "ordinal": 2,
+        "ordinal": 3,
         "name": "fk_authorizing_employee_id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 3,
+        "ordinal": 4,
         "name": "start_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 4,
+        "ordinal": 5,
         "name": "end_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 5,
+        "ordinal": 6,
         "name": "created_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Int8",
-        "Int8"
+        "Uuid"
       ]
     },
     "nullable": [
+      false,
       false,
       false,
       true,
@@ -49,5 +54,5 @@
       false
     ]
   },
-  "hash": "abd3a0952683fc7c71360c63aa7932d8d65830b8ac5c6751f1d653320ffcf4f8"
+  "hash": "1ee9762ec8954910f192cdea65c0c27893add37f744653df664fc4907a67d832"
 }
