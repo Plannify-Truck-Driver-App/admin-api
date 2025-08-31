@@ -56,7 +56,7 @@ jobs:
       - name: Update prod-admin-api.yaml with new tag
         run: |
           VERSION=${{ needs.build-and-push.outputs.version }}
-          FILE="yaml-applications/prod-admin-api.yaml"
+          FILE="yaml-applications/prod-admin-api/prod-admin-api.yaml"
 
           echo "Updating image tag in $FILE to $VERSION"
           sed -i "s|ghcr.io/plannify-truck-driver-app/admin-api:.*|ghcr.io/plannify-truck-driver-app/admin-api:$VERSION|" $FILE
