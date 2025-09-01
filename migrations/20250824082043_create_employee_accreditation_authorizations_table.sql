@@ -10,11 +10,14 @@ CREATE TABLE IF NOT EXISTS public."employee_accreditation_authorizations" (
 
     CONSTRAINT fk_recipient_employee_id
     FOREIGN KEY (fk_recipient_employee_id)
-    REFERENCES employees(pk_employee_id),
+    REFERENCES employees(pk_employee_id)
+    ON DELETE CASCADE,
     CONSTRAINT fk_employee_level_id
     FOREIGN KEY (fk_employee_level_id)
-    REFERENCES employee_levels(pk_employee_level_id),
+    REFERENCES employee_levels(pk_employee_level_id)
+    ON DELETE CASCADE,
     CONSTRAINT fk_authorizing_employee_id
     FOREIGN KEY (fk_authorizing_employee_id)
     REFERENCES employees(pk_employee_id)
+    ON DELETE CASCADE
 );

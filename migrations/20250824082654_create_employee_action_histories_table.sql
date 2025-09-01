@@ -11,8 +11,10 @@ CREATE TABLE IF NOT EXISTS public."employee_action_histories" (
 
     CONSTRAINT fk_employee_id
     FOREIGN KEY (fk_employee_id)
-    REFERENCES employees(pk_employee_id),
+    REFERENCES employees(pk_employee_id)
+    ON DELETE CASCADE,
     CONSTRAINT fk_employee_authorization_type_id
     FOREIGN KEY (fk_employee_authorization_type_id)
     REFERENCES employee_authorization_types(pk_employee_authorization_type_id)
+    ON DELETE CASCADE
 );

@@ -8,4 +8,5 @@ CREATE TABLE IF NOT EXISTS public."employee_authorizations" (
     CONSTRAINT fk_employee_authorization_category_id
     FOREIGN KEY (fk_employee_authorization_category_id)
     REFERENCES employee_authorization_categories(pk_employee_authorization_category_id)
+    ON DELETE CASCADE
 );

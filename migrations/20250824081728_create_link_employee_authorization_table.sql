@@ -7,8 +7,10 @@ CREATE TABLE IF NOT EXISTS public."link_employee_authorization" (
 
     CONSTRAINT fk_employee_authorization_type_id
     FOREIGN KEY (fk_employee_authorization_type_id)
-    REFERENCES employee_authorization_types(pk_employee_authorization_type_id),
+    REFERENCES employee_authorization_types(pk_employee_authorization_type_id)
+    ON DELETE CASCADE,
     CONSTRAINT fk_employee_level_id
     FOREIGN KEY (fk_employee_level_id)
     REFERENCES employee_levels(pk_employee_level_id)
+    ON DELETE CASCADE
 );
