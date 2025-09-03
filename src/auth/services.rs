@@ -58,10 +58,11 @@ impl AuthService {
         .ok_or(AppError::Validation("Invalid email or password".to_string()))?;
 
         // check password
-        if !verify(&login.password, &employee.login_password_hash)
-            .map_err(|_| AppError::Internal("Invalid email or password".to_string()))? {
-            return Err(AppError::Validation("Invalid email or password".to_string()));
-        }
+        let valid = tokio::task::spawn_blocking(move || {
+            bcrypt::verify(&login.password, &employee.login_password_hash)
+        })
+        .await
+        .map_err(|_| AppError::Internal("Thread join error".to_string()))?;
         
         // get employee permissions
         let permissions = self.get_employee_permissions(employee.pk_employee_id).await?;
