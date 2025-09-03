@@ -1,7 +1,7 @@
 use chrono::Utc;
 use redis::{aio::ConnectionManager, AsyncCommands};
 use sqlx::PgPool;
-use bcrypt::{hash, verify, DEFAULT_COST};
+use bcrypt::{hash, DEFAULT_COST};
 use tracing::debug;
 use uuid::Uuid;
 use jsonwebtoken::{encode, Header, EncodingKey};
