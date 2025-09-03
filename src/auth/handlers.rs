@@ -5,20 +5,16 @@ use axum::{
 use tracing::debug;
 
 use crate::{
-    auth::models::{AuthResponse, RefreshTokenRequest}, employee::models::{Employee, EmployeeCreate, EmployeeLoginRequest}, errors::app_error::AppError, middleware::AppState
+    auth::models::{AuthResponse, RefreshTokenRequest}, employee::models::{Employee, EmployeeCreate, EmployeeLoginRequest}, errors::app_error::AppError, middleware::{validate_request, AppState}
 };
-use validator::Validate;
-
-fn validate_request<T: Validate>(req: &T) -> Result<(), AppError> {
-    req.validate()
-        .map_err(|e| AppError::Validation(format!("The request content is not valid: {}", e)))
-}
 
 pub async fn login(
     State(app_state): State<AppState>,
     Json(login): Json<EmployeeLoginRequest>,
 ) -> Result<Json<AuthResponse>, AppError> {
     debug!("Logging in user: {}", login.professional_email);
+    validate_request(&login)?;
+
     let response = app_state.auth_service.login(&login).await?;
     Ok(Json(response))
 }

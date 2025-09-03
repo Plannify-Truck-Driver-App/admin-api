@@ -5,7 +5,25 @@ use std::sync::Arc;
 use tower_http::{cors::CorsLayer, trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer}};
 use tracing::info;
 
-use crate::{auth::{routes::public_auth_routes, services::AuthService}, driver::{routes::protected_driver_routes, services::DriverService}, employee::{routes::protected_employees_routes, services::EmployeeService}, middleware::AppState};
+use crate::{
+    auth::{
+        routes::public_auth_routes,
+        services::AuthService
+    }, 
+    driver::{
+        routes::protected_driver_routes, 
+        services::DriverService
+    },
+    workday::{
+        routes::protected_workday_routes,
+        services::WorkdayService
+    },
+    employee::{
+        routes::protected_employees_routes, 
+        services::EmployeeService
+    }, 
+    middleware::AppState
+};
 
 mod models;
 mod errors;
@@ -13,6 +31,7 @@ mod middleware;
 mod driver;
 mod auth;
 mod employee;
+mod workday;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -37,11 +56,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let driver_service = Arc::new(DriverService::new(pool.clone()));
     let auth_service = Arc::new(AuthService::new(pool.clone()));
     let employee_service = Arc::new(EmployeeService::new(pool.clone()));
+    let workday_service = Arc::new(WorkdayService::new(pool.clone()));
 
     let app_state = AppState {
         auth_service,
         employee_service,
         driver_service,
+        workday_service,
         jwt_secret,
     };
 
@@ -51,6 +72,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let admin_router = Router::new()
         .merge(public_auth_routes(app_state.clone()))
         .merge(protected_driver_routes(app_state.clone()))
+        .merge(protected_workday_routes(app_state.clone()))
         .merge(protected_employees_routes(app_state.clone()));
 
     let app = Router::new()

@@ -10,7 +10,7 @@ use jsonwebtoken::{decode, DecodingKey, Validation};
 use uuid::Uuid;
 
 use crate::{
-    auth::{models::Claims, services::AuthService}, driver::services::DriverService, employee::services::EmployeeService, errors::app_error::AppError, middleware::require_permissions
+    auth::{models::Claims, services::AuthService}, driver::services::DriverService, employee::services::EmployeeService, errors::app_error::AppError, middleware::require_permissions, workday::services::WorkdayService
 };
 
 #[derive(Clone)]
@@ -18,6 +18,7 @@ pub struct AppState {
     pub auth_service: Arc<AuthService>,
     pub employee_service: Arc<EmployeeService>,
     pub driver_service: Arc<DriverService>,
+    pub workday_service: Arc<WorkdayService>,
     pub jwt_secret: String,
 }
 
