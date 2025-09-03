@@ -1,6 +1,8 @@
 use chrono::Utc;
+use redis::{aio::ConnectionManager, AsyncCommands};
 use sqlx::PgPool;
 use bcrypt::{hash, verify, DEFAULT_COST};
+use tracing::debug;
 use uuid::Uuid;
 use jsonwebtoken::{encode, Header, EncodingKey};
 
@@ -10,13 +12,14 @@ use crate::{
 
 pub struct AuthService {
     pool: PgPool,
+    redis: ConnectionManager,
     jwt_secret: String,
     access_token_duration_minutes: u32,
     refresh_token_duration_minutes: u32,
 }
 
 impl AuthService {
-    pub fn new(pool: PgPool) -> Self {
+    pub fn new(pool: PgPool, redis: ConnectionManager) -> Self {
         let jwt_secret = std::env::var("JWT_SECRET").expect("JWT_SECRET must be defined");
         let access_token_duration_minutes = std::env::var("ACCESS_TOKEN_DURATION_MINUTES")
             .expect("ACCESS_TOKEN_DURATION_MINUTES must be defined")
@@ -29,6 +32,7 @@ impl AuthService {
         
         Self {
             pool,
+            redis,
             jwt_secret,
             access_token_duration_minutes,
             refresh_token_duration_minutes,
@@ -130,6 +134,19 @@ impl AuthService {
     }
     
     pub async fn get_employee_permissions(&self, employee_id: Uuid) -> Result<Vec<i32>, AppError> {
+        let redis_key = format!("employee:{}:permissions", employee_id);
+        let mut conn = self.redis.clone();
+
+        // Lire depuis Redis
+        if let Ok(serialized) = conn.get::<_, String>(&redis_key).await {
+            debug!("Cached permissions found for employee {}", employee_id);
+            if let Ok(permission_ids) = serde_json::from_str::<Vec<i32>>(&serialized) {
+                return Ok(permission_ids);
+            }
+        }
+
+        debug!("Cached permissions not found for employee {}", employee_id);
+
         let permissions = sqlx::query!(
             r#"
             SELECT authorization_id
@@ -162,7 +179,10 @@ impl AuthService {
         let permission_ids: Vec<i32> = permissions.iter()
             .filter_map(|p| p.authorization_id)
             .collect();
-        
+
+        let serialized = serde_json::to_string(&permission_ids)?;
+        let _: () = conn.set_ex(redis_key, serialized, 60 * 60 * 24).await.map_err(|_| AppError::Internal("Failed to cache permissions in Redis".to_string()))?;
+
         Ok(permission_ids)
     }
     

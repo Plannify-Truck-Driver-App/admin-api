@@ -1,4 +1,5 @@
 use axum::Router;
+use redis::aio::ConnectionManager;
 use sqlx::PgPool;
 use tracing_subscriber::EnvFilter;
 use std::sync::Arc;
@@ -52,9 +53,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let jwt_secret = std::env::var("JWT_SECRET")
         .expect("JWT_SECRET must be defined");
-    
+
+    let redis_url = std::env::var("REDIS_URL")
+        .expect("REDIS_URL must be defined");
+
+    let redis_client = redis::Client::open(redis_url)
+        .expect("Failed to create Redis client");
+    let redis_manager: ConnectionManager = ConnectionManager::new(redis_client)
+        .await
+        .expect("Failed to get Redis connection manager");
+
     let driver_service = Arc::new(DriverService::new(pool.clone()));
-    let auth_service = Arc::new(AuthService::new(pool.clone()));
+    let auth_service = Arc::new(AuthService::new(pool.clone(), redis_manager));
     let employee_service = Arc::new(EmployeeService::new(pool.clone()));
     let workday_service = Arc::new(WorkdayService::new(pool.clone()));
 
