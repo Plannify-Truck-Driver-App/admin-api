@@ -1,13 +1,22 @@
+use argon2::{
+    password_hash::{rand_core::OsRng, PasswordHasher, PasswordVerifier, SaltString},
+    Argon2, PasswordHash
+};
 use chrono::Utc;
 use redis::{aio::ConnectionManager, AsyncCommands};
 use sqlx::PgPool;
-use bcrypt::{hash, DEFAULT_COST};
 use tracing::debug;
 use uuid::Uuid;
 use jsonwebtoken::{encode, Header, EncodingKey};
 
 use crate::{
-    auth::models::{AuthResponse, Claims, RefreshClaims, RefreshTokenRequest}, employee::models::{Employee, EmployeeCreate, EmployeeLoginRequest}, errors::app_error::AppError
+    auth::models::{
+        AuthResponse, Claims, RefreshClaims, RefreshTokenRequest
+    },
+    employee::models::{
+        Employee, EmployeeCreate, EmployeeLoginRequest
+    },
+    errors::app_error::AppError
 };
 
 pub struct AuthService {
@@ -57,17 +66,10 @@ impl AuthService {
         .await?
         .ok_or(AppError::Validation("Invalid email or password".to_string()))?;
 
-        // check password
-        let password = login.password.clone();
-        let hash = employee.login_password_hash.clone();
-        let valid = tokio::task::spawn_blocking(move || {
-            bcrypt::verify(&password, &hash)
-        })
-        .await
-        .map_err(|_| AppError::Internal("Thread join error".to_string()))?
-        .map_err(|_| AppError::Internal("Password verification failed".to_string()))?;
-        
-        if !valid {
+        let parsed_hash = PasswordHash::new(&employee.login_password_hash)
+            .map_err(|_| AppError::Internal("Failed to parse password hash".to_string()))?;
+
+        if !Argon2::default().verify_password(login.password.as_bytes(), &parsed_hash).is_ok() {
             return Err(AppError::Validation("Invalid email or password".to_string()));
         }
         
@@ -242,10 +244,13 @@ impl AuthService {
         if existing.is_some() {
             return Err(AppError::Conflict("Un employé avec cet email professionnel existe déjà".to_string(), "EMAIL_EXISTS".to_string()));
         }
-        
-        // hash password
-        let password_hash = hash(employee_data.login_password.as_bytes(), DEFAULT_COST)
-            .map_err(|_| AppError::Internal("An error occurred while hashing the password".to_string()))?;
+
+        let salt = SaltString::generate(&mut OsRng);
+        let argon2 = Argon2::default();
+
+        let password_hash = argon2.hash_password(employee_data.login_password.as_bytes(), &salt)
+            .map_err(|_| AppError::Internal("An error occurred while hashing the password".to_string()))
+            .map(|hash| hash.to_string())?;
         
         // insert employee
         let employee = sqlx::query_as!(

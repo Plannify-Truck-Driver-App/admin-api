@@ -1,5 +1,5 @@
+use argon2::{password_hash::{rand_core::OsRng, PasswordHasher, SaltString}, Algorithm, Argon2, Params, Version};
 use sqlx::PgPool;
-use bcrypt::{hash, DEFAULT_COST};
 use uuid::Uuid;
 
 use crate::{driver::models::{CreateDriverRequest, Driver, GetAllDriversQuery, UpdateDriverRequest}, errors::app_error::AppError};
@@ -245,8 +245,15 @@ impl DriverService {
     // Create a new user
     pub async fn create_driver(&self, create_req: &CreateDriverRequest) -> Result<Driver, AppError> {
         let driver_id = Uuid::new_v4();
-        let password_hash = hash(&create_req.password, DEFAULT_COST)
-            .map_err(|_| AppError::Internal("Failed to hash password".to_string()))?;
+
+        let salt = SaltString::generate(&mut OsRng);
+        let params = Params::new(19 * 1024, 2, 1, None)
+            .map_err(|_| AppError::Internal("An error occurred while creating Argon2 parameters".to_string()))?; // 19 MiB, 2 itérations, 1 thread
+        let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
+
+        let password_hash = argon2.hash_password(create_req.password.as_bytes(), &salt)
+            .map_err(|_| AppError::Internal("An error occurred while hashing the password".to_string()))
+            .map(|hash| hash.to_string())?;
 
         let driver = sqlx::query_as!(
             Driver,

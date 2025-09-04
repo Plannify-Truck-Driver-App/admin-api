@@ -36,7 +36,7 @@ chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.0", features = ["v4", "serde"] }
 
 # Password hashing
-bcrypt = "0.17.0"
+argon2 = "0.5.3"
 
 # JWT
 jsonwebtoken = "9.2"
