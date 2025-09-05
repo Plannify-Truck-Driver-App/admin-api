@@ -14,9 +14,6 @@ pub enum AppError {
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
 
-    #[error("Bad request: {0}")]
-    BadRequest(String),
-
     #[error("Conflict: {0} (Code: {1})")]
     Conflict(String, String),
 
@@ -41,7 +38,6 @@ impl IntoResponse for AppError {
         let (status, error_message) = match self {
             AppError::Database(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Database error"),
             AppError::Serialization(_) => (StatusCode::BAD_REQUEST, "Data format error"),
-            AppError::BadRequest(ref message) => (StatusCode::BAD_REQUEST, message.as_str()),
             AppError::Conflict(ref message, ref _error_code) => (StatusCode::CONFLICT, message.as_str()),
             AppError::NotFound(ref message, ref _error_code) => (StatusCode::NOT_FOUND, message.as_str()),
             AppError::Forbidden(ref message) => (StatusCode::FORBIDDEN, message.as_str()),
