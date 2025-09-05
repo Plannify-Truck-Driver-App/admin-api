@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT fk_driver_id, date, start_time, end_time, rest_time, overnight_rest\n            FROM workdays\n            WHERE fk_driver_id = $1\n            ORDER BY date DESC\n            LIMIT $2\n            OFFSET $3\n            ",
+  "query": "\n            SELECT fk_driver_id, date, start_time, end_time, rest_time, overnight_rest\n            FROM workdays\n            WHERE fk_driver_id = $1\n            ORDER BY date ASC\n            LIMIT $2\n            OFFSET $3\n            ",
   "describe": {
     "columns": [
       {
@@ -50,5 +50,5 @@
       false
     ]
   },
-  "hash": "ce6c79ce24ff963d008b95a83b47a2d5b990ea1b2b15b525da43ad74561b6ef8"
+  "hash": "77876304b0faf5b522426c1cfa4686a2238396ba52cff911416ee84224c96b02"
 }
