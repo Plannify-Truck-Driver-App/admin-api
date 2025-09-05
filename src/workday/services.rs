@@ -30,7 +30,7 @@ impl WorkdayService {
                 .await? as u64;
 
         let query = format!(
-            "SELECT fk_driver_id, date, start_time, end_time, rest_time, overnight_rest FROM workdays {} ORDER BY date DESC LIMIT $1 OFFSET $2",
+            "SELECT fk_driver_id, date, start_time, end_time, rest_time, overnight_rest FROM workdays {} ORDER BY date ASC LIMIT $1 OFFSET $2",
             where_clause
         );
 
@@ -86,7 +86,7 @@ impl WorkdayService {
             SELECT fk_driver_id, date, start_time, end_time, rest_time, overnight_rest
             FROM workdays
             WHERE fk_driver_id = $1
-            ORDER BY date DESC
+            ORDER BY date ASC
             LIMIT $2
             OFFSET $3
             "#,
@@ -124,7 +124,7 @@ impl WorkdayService {
             query.push(' ');
             query.push_str(&query_date);
         }
-        query.push_str(" ORDER BY date DESC");
+        query.push_str(" ORDER BY date ASC");
 
         let workdays = sqlx::query_as::<_, Workday>(&query)
             .bind(driver_id)

@@ -1,7 +1,7 @@
 use axum::{
-    middleware::{from_fn, from_fn_with_state}, routing::{delete, get, post, put}, Router
+    middleware::{from_fn, from_fn_with_state}, routing::{get, post, put}, Router
 };
-use crate::{driver::{handlers::{create_driver, deactivate_driver, get_all_drivers, get_driver_by_id, update_driver}}, middleware::{auth_middleware, with_required_permissions, AppState}};
+use crate::{driver::handlers::{create_driver, deactivate_driver, get_all_driver_workdays, get_all_drivers, get_driver_by_id, reactivate_driver, update_driver}, middleware::{auth_middleware, with_required_permissions, AppState}};
 
 pub fn protected_driver_routes(
     app_state: AppState
@@ -11,7 +11,9 @@ pub fn protected_driver_routes(
         .route("/drivers", post(create_driver).route_layer(from_fn(with_required_permissions(vec![2]))))
         .route("/drivers/{id}", get(get_driver_by_id).route_layer(from_fn(with_required_permissions(vec![1]))))
         .route("/drivers/{id}", put(update_driver).route_layer(from_fn(with_required_permissions(vec![3]))))
-        .route("/drivers/{id}", delete(deactivate_driver).route_layer(from_fn(with_required_permissions(vec![4]))))
+        .route("/drivers/{id}/deactivate", put(deactivate_driver).route_layer(from_fn(with_required_permissions(vec![4]))))
+        .route("/drivers/{id}/reactivate", put(reactivate_driver).route_layer(from_fn(with_required_permissions(vec![4]))))
+        .route("/drivers/{id}/workdays", get(get_all_driver_workdays).route_layer(from_fn(with_required_permissions(vec![5]))))
         .layer(from_fn_with_state(
             app_state.clone(),
             auth_middleware,

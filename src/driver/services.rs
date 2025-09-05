@@ -387,6 +387,26 @@ impl DriverService {
         Ok(())
     }
 
+    pub async fn reactivate_driver(&self, driver_id: &Uuid) -> Result<(), AppError> {
+        let driver = self.get_driver_by_id(driver_id).await?;
+        if driver.deactivated_at.is_none() {
+            return Err(AppError::NotFound("Driver is not deactivated".to_string(), "DRIVER_NOT_DEACTIVATED".to_string()));
+        }
+
+        let result = sqlx::query!(
+            "UPDATE \"drivers\" SET deactivated_at = NULL WHERE pk_driver_id = $1",
+            driver_id
+        )
+        .execute(&self.pool)
+        .await?;
+
+        if result.rows_affected() == 0 {
+            return Err(AppError::NotFound("Driver not found".to_string(), "DRIVER_NOT_FOUND".to_string()));
+        }
+
+        Ok(())
+    }
+
     // Check if an email exists
     pub async fn email_exists(&self, email: &str) -> Result<bool, AppError> {
         let count = sqlx::query!(

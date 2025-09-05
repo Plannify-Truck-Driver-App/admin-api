@@ -5,7 +5,7 @@ use axum::{
 };
 use tracing::debug;
 
-use crate::{driver::{models::{CreateDriverRequest, Driver, GetAllDriversQuery, UpdateDriverRequest}}, middleware::AppState, models::paginate::{PaginatedResponse, PaginationInfo, PAGINATE_MAX_LIMIT}};
+use crate::{driver::models::{CreateDriverRequest, Driver, GetAllDriversQuery, UpdateDriverRequest}, middleware::AppState, models::paginate::{PaginateQuery, PaginatedResponse, PaginationInfo, PAGINATE_MAX_LIMIT}, workday::models::{GetAllWorkdaysQuery, Workday}};
 use crate::errors::app_error::AppError;
 use uuid::Uuid;
 use validator::Validate;
@@ -49,6 +49,8 @@ pub async fn get_driver_by_id(
     Path(driver_id): Path<String>,
     State(app_state): State<AppState>,
 ) -> Result<Json<Driver>, AppError> {
+    debug!("Get driver by ID request: {:?}", driver_id);
+
     let driver_uuid = driver_id.parse::<Uuid>()
         .map_err(|_| AppError::Validation("Driver ID is not valid".to_string()))?;
     let driver = app_state.driver_service.get_driver_by_id(&driver_uuid).await?;
@@ -78,6 +80,8 @@ pub async fn update_driver(
     State(app_state): State<AppState>,
     Json(update_req): Json<UpdateDriverRequest>,
 ) -> Result<Json<Driver>, AppError> {
+    debug!("Update driver request: {:?}, {:?}", driver_id, update_req);
+
     let driver_uuid = driver_id.parse::<Uuid>()
         .map_err(|_| AppError::Validation("Driver ID is not valid".to_string()))?;
     
@@ -101,6 +105,8 @@ pub async fn deactivate_driver(
     Path(driver_id): Path<String>,
     State(app_state): State<AppState>,
 ) -> Result<StatusCode, AppError> {
+    debug!("Deactivate driver request: {:?}", driver_id);
+
     let driver_uuid = driver_id.parse::<Uuid>()
         .map_err(|_| AppError::Validation("Driver ID is not valid".to_string()))?;
     
@@ -109,6 +115,62 @@ pub async fn deactivate_driver(
 
     app_state.driver_service.deactivate_driver(&driver_uuid).await?;
     Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn reactivate_driver(
+    Path(driver_id): Path<String>,
+    State(app_state): State<AppState>,
+) -> Result<StatusCode, AppError> {
+    debug!("Reactivate driver request: {:?}", driver_id);
+
+    let driver_uuid = driver_id.parse::<Uuid>()
+        .map_err(|_| AppError::Validation("Driver ID is not valid".to_string()))?;
+    
+    // check if the user exists
+    let _existing_driver = app_state.driver_service.get_driver_by_id(&driver_uuid).await?;
+
+    app_state.driver_service.reactivate_driver(&driver_uuid).await?;
+    Ok(StatusCode::OK)
+}
+
+pub async fn get_all_driver_workdays(
+    Path(driver_id): Path<String>,
+    Query(filters): Query<GetAllWorkdaysQuery>,
+    State(app_state): State<AppState>,
+) -> Result<Json<PaginatedResponse<Workday>>, AppError> {
+    debug!("Get all workdays for driver request: {:?}", driver_id);
+
+    let driver_uuid = driver_id.parse::<Uuid>()
+        .map_err(|_| AppError::Validation("Driver ID is not valid".to_string()))?;
+    
+    // check if the user exists
+    let _existing_driver = app_state.driver_service.get_driver_by_id(&driver_uuid).await?;
+
+    let workdays;
+    let total;
+
+    if filters.month.is_none() && filters.year.is_none() {
+        let filters_simple = PaginateQuery {
+            page: filters.page,
+            limit: filters.limit,
+        };
+        (workdays, total) = app_state.workday_service.get_all_workdays_by_driver_id(&filters_simple, driver_uuid).await?;
+    } else {
+        workdays = app_state.workday_service.get_all_monthly_wordays_by_driver_id(&filters, driver_uuid).await?;
+        total = workdays.len() as u64;
+    }
+
+
+    let paginated_response = PaginatedResponse {
+            data: workdays,
+            pagination: PaginationInfo {
+                page: filters.page,
+                limit: filters.limit,
+                total,
+            },
+    };
+
+    Ok(Json(paginated_response))
 }
 
 #[cfg(test)]
