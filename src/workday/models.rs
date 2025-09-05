@@ -66,3 +66,13 @@ pub struct CreateWorkdayRequest {
     pub rest_time: NaiveTime,
     pub overnight_rest: bool,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateWorkdayRequest {
+    pub date: NaiveDate,
+    pub fk_driver_id: Uuid,
+    pub start_time: Option<NaiveTime>,
+    pub end_time: Option<NaiveTime>,
+    pub rest_time: Option<NaiveTime>,
+    pub overnight_rest: Option<bool>,
+}

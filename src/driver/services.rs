@@ -237,7 +237,7 @@ impl DriverService {
 
         match driver {
             Ok(Some(driver)) => Ok(driver),
-            Ok(None) => Err(AppError::NotFound("Driver not found".to_string())),
+            Ok(None) => Err(AppError::NotFound("Driver not found".to_string(), "DRIVER_NOT_FOUND".to_string())),
             Err(e) => Err(e.into())
         }
     }
@@ -370,7 +370,7 @@ impl DriverService {
     pub async fn deactivate_driver(&self, driver_id: &Uuid) -> Result<(), AppError> {
         let driver = self.get_driver_by_id(driver_id).await?;
         if driver.deactivated_at.is_some() {
-            return Err(AppError::NotFound("Driver has already been deactivated".to_string()));
+            return Err(AppError::NotFound("Driver has already been deactivated".to_string(), "DRIVER_ALREADY_DEACTIVATED".to_string()));
         }
 
         let result = sqlx::query!(
@@ -381,7 +381,7 @@ impl DriverService {
         .await?;
 
         if result.rows_affected() == 0 {
-            return Err(AppError::NotFound("Driver not found".to_string()));
+            return Err(AppError::NotFound("Driver not found".to_string(), "DRIVER_NOT_FOUND".to_string()));
         }
 
         Ok(())

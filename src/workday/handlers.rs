@@ -2,7 +2,7 @@ use axum::{extract::{Query, State}, Json};
 use http::StatusCode;
 use tracing::debug;
 
-use crate::{errors::app_error::AppError, middleware::AppState, models::paginate::{PaginatedResponse, PaginationInfo, PAGINATE_MAX_LIMIT}, workday::models::{CreateWorkdayRequest, GetAllWorkdaysByPeriodQuery, GetAllWorkdaysQuery, Workday}};
+use crate::{errors::app_error::AppError, middleware::AppState, models::paginate::{PaginatedResponse, PaginationInfo, PAGINATE_MAX_LIMIT}, workday::models::{CreateWorkdayRequest, GetAllWorkdaysByPeriodQuery, GetAllWorkdaysQuery, UpdateWorkdayRequest, Workday}};
 
 pub async fn get_all_workdays(
     Query(filters): Query<GetAllWorkdaysQuery>,
@@ -66,4 +66,15 @@ pub async fn create_workday(
     let created_workday = app_state.workday_service.create_workday(&create_req).await?;
 
     Ok((StatusCode::CREATED, Json(created_workday)))
+}
+
+pub async fn update_workday(
+    State(app_state): State<AppState>,
+    Json(update_req): Json<UpdateWorkdayRequest>,
+) -> Result<(StatusCode, Json<Workday>), AppError> {
+    debug!("Update workday request: {:?}", update_req);
+
+    let updated_workday = app_state.workday_service.update_workday(&update_req).await?;
+
+    Ok((StatusCode::OK, Json(updated_workday)))
 }

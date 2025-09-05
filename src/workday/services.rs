@@ -1,6 +1,6 @@
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::{driver::models::Driver, errors::app_error::AppError, models::paginate::PaginateQuery, workday::models::{CreateWorkdayRequest, GetAllWorkdaysByPeriodQuery, GetAllWorkdaysQuery, Workday}};
+use crate::{driver::models::Driver, errors::app_error::AppError, models::paginate::PaginateQuery, workday::models::{CreateWorkdayRequest, GetAllWorkdaysByPeriodQuery, GetAllWorkdaysQuery, UpdateWorkdayRequest, Workday}};
 
 pub struct WorkdayService {
     pool: PgPool,
@@ -145,7 +145,7 @@ impl WorkdayService {
         .is_some();
 
         if !driver_exists {
-            return Err(AppError::NotFound("Driver not found".to_string()));
+            return Err(AppError::NotFound("Driver not found".to_string(), "DRIVER_NOT_FOUND".to_string()));
         }
 
         let workday = sqlx::query_as!(
@@ -165,6 +165,42 @@ impl WorkdayService {
         .fetch_one(&self.pool)
         .await
         .map_err(|_| AppError::Conflict("A workday for this driver already exists".to_string(), "WORKDAY_ALREADY_EXISTS".to_string()))?;
+
+        Ok(workday)
+    }
+
+    pub async fn update_workday(&self, update_req: &UpdateWorkdayRequest) -> Result<Workday, AppError> {
+        let driver_exists = sqlx::query_as!(
+            Driver,
+            "SELECT pk_driver_id, firstname, lastname, gender, email, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at, verified_at, last_login_at, deactivated_at FROM \"drivers\" WHERE pk_driver_id = $1",
+            update_req.fk_driver_id
+        )
+        .fetch_optional(&self.pool)
+        .await?
+        .is_some();
+
+        if !driver_exists {
+            return Err(AppError::NotFound("Driver not found".to_string(), "DRIVER_NOT_FOUND".to_string()));
+        }
+
+        let workday = sqlx::query_as!(
+            Workday,
+            r#"
+            UPDATE workdays
+            SET fk_driver_id = $1, date = $2, start_time = $3, end_time = $4, rest_time = $5, overnight_rest = $6
+            WHERE fk_driver_id = $1 AND date = $2
+            RETURNING fk_driver_id, date, start_time, end_time, rest_time, overnight_rest
+            "#,
+            update_req.fk_driver_id,
+            update_req.date,
+            update_req.start_time,
+            update_req.end_time,
+            update_req.rest_time,
+            update_req.overnight_rest
+        )
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|_| AppError::NotFound("No workday found".to_string(), "WORKDAY_NOT_FOUND".to_string()))?;
 
         Ok(workday)
     }

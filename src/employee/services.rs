@@ -215,7 +215,7 @@ impl EmployeeService {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|_| AppError::NotFound("Employee not found".to_string()))
+        .map_err(|_| AppError::NotFound("Employee not found".to_string(), "EMPLOYEE_NOT_FOUND".to_string()))
     }
 
     pub async fn get_light_employee_by_id(&self, employee_id: &str) -> Result<LightEmployee, AppError> {
@@ -228,7 +228,7 @@ impl EmployeeService {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|_| AppError::NotFound("Employee not found".to_string()))
+        .map_err(|_| AppError::NotFound("Employee not found".to_string(), "EMPLOYEE_NOT_FOUND".to_string()))
     }
 
     pub async fn create_employee(&self, employee_data: &EmployeeCreate) -> Result<Employee, AppError> {
@@ -326,8 +326,8 @@ impl EmployeeService {
         .fetch_one(&self.pool)
         .await?;
 
-        let entity_type = authorization.entity_type.parse::<EntityType>().map_err(|_| AppError::NotFound("Entity type not found".to_string()))?;
-        let crud_type = authorization.crud_type.ok_or(AppError::NotFound("CRUD type not found".to_string()))?.parse::<CrudType>().map_err(|_| AppError::NotFound("CRUD type not found".to_string()))?;
+        let entity_type = authorization.entity_type.parse::<EntityType>().map_err(|_| AppError::NotFound("Entity type not found".to_string(), "ENTITY_TYPE_NOT_FOUND".to_string()))?;
+        let crud_type = authorization.crud_type.ok_or(AppError::NotFound("CRUD type not found".to_string(), "CRUD_TYPE_NOT_FOUND".to_string()))?.parse::<CrudType>().map_err(|_| AppError::NotFound("CRUD type not found".to_string(), "CRUD_TYPE_NOT_FOUND".to_string()))?;
 
         Ok(EmployeeAuthorization {
             pk_employee_authorization_id: authorization.pk_employee_authorization_type_id,
@@ -355,8 +355,8 @@ impl EmployeeService {
         .fetch_one(&self.pool)
         .await?;
 
-        let entity_type = authorization.entity_type.parse::<EntityType>().map_err(|_| AppError::NotFound("Entity type not found".to_string()))?;
-        let crud_type = authorization.crud_type.ok_or(AppError::NotFound("CRUD type not found".to_string()))?.parse::<CrudType>().map_err(|_| AppError::NotFound("CRUD type not found".to_string()))?;
+        let entity_type = authorization.entity_type.parse::<EntityType>().map_err(|_| AppError::NotFound("Entity type not found".to_string(), "ENTITY_TYPE_NOT_FOUND".to_string()))?;
+        let crud_type = authorization.crud_type.ok_or(AppError::NotFound("CRUD type not found".to_string(), "CRUD_TYPE_NOT_FOUND".to_string()))?.parse::<CrudType>().map_err(|_| AppError::NotFound("CRUD type not found".to_string(), "CRUD_TYPE_NOT_FOUND".to_string()))?;
 
         Ok(EmployeeAuthorization {
             pk_employee_authorization_id: authorization.pk_employee_authorization_type_id,
@@ -424,7 +424,7 @@ impl EmployeeService {
         .fetch_all(&self.pool).await?;
 
         if levels.is_empty() {
-            return Err(AppError::NotFound("No current employee level found".to_string()));
+            return Err(AppError::NotFound("No current employee level found".to_string(), "EMPLOYEE_LEVEL_NOT_FOUND".to_string()));
         }
 
         Ok(levels.into_iter().next().unwrap())
@@ -455,10 +455,10 @@ impl EmployeeService {
         )
         .fetch_optional(&self.pool)
         .await
-        .map_err(|_| AppError::NotFound("Level not found".to_string()))?;
+        .map_err(|_| AppError::NotFound("Level not found".to_string(), "EMPLOYEE_LEVEL_NOT_FOUND".to_string()))?;
 
         if level.is_none() {
-            return Err(AppError::NotFound("Level not found".to_string()));
+            return Err(AppError::NotFound("Level not found".to_string(), "EMPLOYEE_LEVEL_NOT_FOUND".to_string()));
         }
 
         Ok(level.unwrap())
@@ -718,7 +718,7 @@ impl EmployeeService {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|_| AppError::NotFound("Accreditation not found".to_string()))?;
+        .map_err(|_| AppError::NotFound("Accreditation not found".to_string(), "ACCREDITATION_NOT_FOUND".to_string()))?;
 
         let employee = self.get_light_employee_by_id(&accreditation_row.fk_recipient_employee_id.to_string()).await?;
         let level = self.get_employee_level_by_id(accreditation_row.fk_employee_level_id).await?;
@@ -816,7 +816,7 @@ impl EmployeeService {
         .await?;
 
         if result.rows_affected() == 0 {
-            return Err(AppError::NotFound("Accreditation not found".to_string()));
+            return Err(AppError::NotFound("Accreditation not found".to_string(), "ACCREDITATION_NOT_FOUND".to_string()));
         }
 
         Ok(())
@@ -1016,7 +1016,7 @@ impl EmployeeService {
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|_| AppError::NotFound("Derogation not found".to_string()))?;
+        .map_err(|_| AppError::NotFound("Derogation not found".to_string(), "DEROGATION_NOT_FOUND".to_string()))?;
 
         let recipient_employee = self.get_light_employee_by_id(&row.fk_recipient_employee_id.to_string()).await?;
         let employee_authorization = self.get_employee_authorization_by_type_id(row.fk_employee_authorization_type_id).await?;

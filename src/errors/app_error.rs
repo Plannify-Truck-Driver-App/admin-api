@@ -21,7 +21,7 @@ pub enum AppError {
     Conflict(String, String),
 
     #[error("Not found: {0}")]
-    NotFound(String),
+    NotFound(String, String),
 
     #[error("Forbidden: {0}")]
     Forbidden(String),
@@ -43,7 +43,7 @@ impl IntoResponse for AppError {
             AppError::Serialization(_) => (StatusCode::BAD_REQUEST, "Data format error"),
             AppError::BadRequest(ref message) => (StatusCode::BAD_REQUEST, message.as_str()),
             AppError::Conflict(ref message, ref _error_code) => (StatusCode::CONFLICT, message.as_str()),
-            AppError::NotFound(ref message) => (StatusCode::NOT_FOUND, message.as_str()),
+            AppError::NotFound(ref message, ref _error_code) => (StatusCode::NOT_FOUND, message.as_str()),
             AppError::Forbidden(ref message) => (StatusCode::FORBIDDEN, message.as_str()),
             AppError::Validation(ref message) => (StatusCode::BAD_REQUEST, message.as_str()),
             AppError::InsufficientPermissions(ref _permissions) => (StatusCode::FORBIDDEN, "Insufficient permissions"),
@@ -52,6 +52,13 @@ impl IntoResponse for AppError {
 
         let body = match self {
             AppError::Conflict(ref message, ref error_code) => {
+                Json(json!({
+                    "error": message,
+                    "error_code": error_code,
+                    "status": status.as_u16()
+                }))
+            },
+            AppError::NotFound(ref message, ref error_code) => {
                 Json(json!({
                     "error": message,
                     "error_code": error_code,
