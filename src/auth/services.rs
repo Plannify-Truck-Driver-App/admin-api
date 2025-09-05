@@ -1,5 +1,5 @@
 use argon2::{
-    password_hash::{rand_core::OsRng, PasswordHasher, PasswordVerifier, SaltString},
+    password_hash::PasswordVerifier,
     Argon2, PasswordHash
 };
 use chrono::Utc;
@@ -14,7 +14,7 @@ use crate::{
         AuthResponse, Claims, RefreshClaims, RefreshTokenRequest
     },
     employee::models::{
-        Employee, EmployeeCreate, EmployeeLoginRequest
+        Employee, EmployeeLoginRequest
     },
     errors::app_error::AppError
 };
@@ -230,53 +230,5 @@ impl AuthService {
         .map_err(|_| AppError::Internal("An error occurred while generating the refresh token".to_string()))?;
         
         Ok(token)
-    }
-    
-    pub async fn create_employee(&self, employee_data: &EmployeeCreate) -> Result<Employee, AppError> {
-        // check if the professional email already exists
-        let existing = sqlx::query!(
-            "SELECT pk_employee_id FROM employees WHERE professional_email = $1",
-            employee_data.professional_email
-        )
-        .fetch_optional(&self.pool)
-        .await?;
-        
-        if existing.is_some() {
-            return Err(AppError::Conflict("Un employé avec cet email professionnel existe déjà".to_string(), "EMAIL_EXISTS".to_string()));
-        }
-
-        let salt = SaltString::generate(&mut OsRng);
-        let argon2 = Argon2::default();
-
-        let password_hash = argon2.hash_password(employee_data.login_password.as_bytes(), &salt)
-            .map_err(|_| AppError::Internal("An error occurred while hashing the password".to_string()))
-            .map(|hash| hash.to_string())?;
-        
-        // insert employee
-        let employee = sqlx::query_as!(
-            Employee,
-            r#"
-            INSERT INTO employees (
-                firstname, lastname, gender, personal_email, login_password_hash,
-                phone_number, professional_email, professional_email_password
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-            RETURNING 
-                pk_employee_id, firstname, lastname, gender, personal_email,
-                login_password_hash, phone_number, professional_email,
-                professional_email_password, created_at, last_login_at, deactivated_at
-            "#,
-            employee_data.firstname,
-            employee_data.lastname,
-            employee_data.gender,
-            employee_data.personal_email,
-            password_hash,
-            employee_data.phone_number,
-            employee_data.professional_email,
-            employee_data.professional_email_password
-        )
-        .fetch_one(&self.pool)
-        .await?;
-        
-        Ok(employee)
     }
 }

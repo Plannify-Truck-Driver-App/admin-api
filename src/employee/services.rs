@@ -1,9 +1,31 @@
+use argon2::{password_hash::{rand_core::OsRng, SaltString, PasswordHasher}, Argon2};
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
-use tracing::debug;
 use uuid::Uuid;
 
-use crate::{auth::services::AuthService, employee::models::{AssignAccreditationRequest, CreateEmployeeDerogationRequest, CrudType, Employee, EmployeeAccreditation, EmployeeAccreditationRow, EmployeeAuthorization, EmployeeDerogation, EmployeeDerogationRow, EmployeeLevel, EmployeeLevelWithAuthorizations, EntityType, GetAllEmployeesQuery, LightEmployee, UpdateAccreditationRequest}, errors::app_error::AppError, models::paginate::{PaginateQuery, PaginatedResponse, PaginationInfo}};
+use crate::{
+    auth::services::AuthService,
+    employee::models::{
+        AssignAccreditationRequest,
+        CreateEmployeeDerogationRequest,
+        CrudType,
+        Employee,
+        EmployeeAccreditation,
+        EmployeeAccreditationRow,
+        EmployeeAuthorization,
+        EmployeeCreate,
+        EmployeeDerogation,
+        EmployeeDerogationRow,
+        EmployeeLevel,
+        EmployeeLevelWithAuthorizations,
+        EntityType,
+        GetAllEmployeesQuery,
+        LightEmployee,
+        UpdateAccreditationRequest
+    },
+    errors::app_error::AppError,
+    models::paginate::{PaginateQuery, PaginatedResponse, PaginationInfo}
+};
 use futures::stream::StreamExt;
 
 pub struct EmployeeService {
@@ -207,6 +229,54 @@ impl EmployeeService {
         .fetch_one(&self.pool)
         .await
         .map_err(|_| AppError::NotFound("Employee not found".to_string()))
+    }
+
+    pub async fn create_employee(&self, employee_data: &EmployeeCreate) -> Result<Employee, AppError> {
+        // check if the professional email already exists
+        let existing = sqlx::query!(
+            "SELECT pk_employee_id FROM employees WHERE professional_email = $1",
+            employee_data.professional_email
+        )
+        .fetch_optional(&self.pool)
+        .await?;
+        
+        if existing.is_some() {
+            return Err(AppError::Conflict("An employee with this professional email already exists".to_string(), "EMAIL_EXISTS".to_string()));
+        }
+
+        let salt = SaltString::generate(&mut OsRng);
+        let argon2 = Argon2::default();
+
+        let password_hash = argon2.hash_password(employee_data.login_password.as_bytes(), &salt)
+            .map_err(|_| AppError::Internal("An error occurred while hashing the password".to_string()))
+            .map(|hash| hash.to_string())?;
+        
+        // insert employee
+        let employee = sqlx::query_as!(
+            Employee,
+            r#"
+            INSERT INTO employees (
+                firstname, lastname, gender, personal_email, login_password_hash,
+                phone_number, professional_email, professional_email_password
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            RETURNING 
+                pk_employee_id, firstname, lastname, gender, personal_email,
+                login_password_hash, phone_number, professional_email,
+                professional_email_password, created_at, last_login_at, deactivated_at
+            "#,
+            employee_data.firstname,
+            employee_data.lastname,
+            employee_data.gender,
+            employee_data.personal_email,
+            password_hash,
+            employee_data.phone_number,
+            employee_data.professional_email,
+            employee_data.professional_email_password
+        )
+        .fetch_one(&self.pool)
+        .await?;
+        
+        Ok(employee)
     }
 
     pub async fn get_all_employee_authorizations(&self) -> Result<Vec<EmployeeAuthorization>, AppError> {
