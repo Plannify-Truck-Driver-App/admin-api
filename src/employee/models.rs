@@ -77,7 +77,7 @@ impl Default for GetAllEmployeesQuery {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Validate)]
-pub struct EmployeeCreate {
+pub struct EmployeeCreateRequest {
     #[validate(length(min = 1, max = 255))]
     pub firstname: String,
     #[validate(length(min = 1, max = 255))]

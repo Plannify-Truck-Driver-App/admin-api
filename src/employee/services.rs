@@ -13,7 +13,7 @@ use crate::{
         EmployeeAccreditation,
         EmployeeAccreditationRow,
         EmployeeAuthorization,
-        EmployeeCreate,
+        EmployeeCreateRequest,
         EmployeeDerogation,
         EmployeeDerogationRow,
         EmployeeLevel,
@@ -231,7 +231,7 @@ impl EmployeeService {
         .map_err(|_| AppError::NotFound("Employee not found".to_string(), "EMPLOYEE_NOT_FOUND".to_string()))
     }
 
-    pub async fn create_employee(&self, employee_data: &EmployeeCreate) -> Result<Employee, AppError> {
+    pub async fn create_employee(&self, employee_data: &EmployeeCreateRequest) -> Result<Employee, AppError> {
         // check if the professional email already exists
         let existing = sqlx::query!(
             "SELECT pk_employee_id FROM employees WHERE professional_email = $1",
@@ -669,7 +669,7 @@ impl EmployeeService {
         let authorizing_employee_level = self.get_current_employee_level_by_employee_id(employee_authorizing_id).await?;
 
         if level.level_index >= authorizing_employee_level.level_index && authorizing_employee_level.level_index != 1 {
-            return Err(AppError::Forbidden("You can't assign a higher or equal level than your own.".to_string()));
+            return Err(AppError::Forbidden("You can't assign a higher or equal level than your own.".to_string(), "FORBIDDEN_ASSIGN_HIGHER_LEVEL".to_string()));
         }
 
         let existing_accreditations = self.get_all_employee_accreditations_from(&employee_uuid_id.to_string(), assign_req.start_at, assign_req.end_at.unwrap_or(DateTime::<Utc>::MAX_UTC)).await?;
@@ -754,7 +754,7 @@ impl EmployeeService {
         let authorizing_employee_level = self.get_current_employee_level_by_employee_id(employee_authorizing_id).await?;
 
         if level.level_index >= authorizing_employee_level.level_index && authorizing_employee_level.level_index != 1 {
-            return Err(AppError::Forbidden("You can't assign a higher or equal level than your own.".to_string()));
+            return Err(AppError::Forbidden("You can't assign a higher or equal level than your own.".to_string(), "FORBIDDEN_ASSIGN_HIGHER_LEVEL".to_string()));
         }
 
         let accreditation = self.get_employee_accreditation_by_id(accreditation_id).await?;
@@ -802,7 +802,7 @@ impl EmployeeService {
         let employee_level = self.get_current_employee_level_by_employee_id(employee_id).await?;
 
         if employee_level.level_index >= accreditation.employee_level.level_index {
-            return Err(AppError::Forbidden("You can't delete an accreditation with a higher or equal level than your own.".to_string()));
+            return Err(AppError::Forbidden("You can't delete an accreditation with a higher or equal level than your own.".to_string(), "FORBIDDEN_DELETE_HIGHER_LEVEL".to_string()));
         }
 
         let result = sqlx::query!(
@@ -1057,7 +1057,7 @@ impl EmployeeService {
         let authorizing_employee_authorizations = auth_service.get_employee_permissions(employee_authorizing_uuid).await?;
 
         if !authorizing_employee_authorizations.contains(&request.employee_authorization_type_id) {
-            return Err(AppError::Forbidden("You can't assign a derogation authorization that you don't have.".to_string()));
+            return Err(AppError::Forbidden("You can't assign a derogation authorization that you don't have.".to_string(), "FORBIDDEN_ASSIGN_UNOWNED_AUTHORIZATION".to_string()));
         }
 
         let derogation_row = sqlx::query_as!(
@@ -1096,7 +1096,7 @@ impl EmployeeService {
         let derogation = self.get_employee_derogation_by_id(id).await?;
 
         if !employee_authorizing_authorizations.contains(&derogation.employee_authorization.pk_employee_authorization_id) {
-            return Err(AppError::Forbidden("You can't delete a derogation that you don't have.".to_string()));
+            return Err(AppError::Forbidden("You can't delete a derogation that you don't have.".to_string(), "FORBIDDEN_DELETE_UNOWNED_AUTHORIZATION".to_string()));
         }
 
         sqlx::query!("DELETE FROM employee_authorization_derogations WHERE pk_employee_authorization_derogation_id = $1", id)

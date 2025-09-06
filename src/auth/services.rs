@@ -72,6 +72,10 @@ impl AuthService {
         if !Argon2::default().verify_password(login.password.as_bytes(), &parsed_hash).is_ok() {
             return Err(AppError::Validation("Invalid email or password".to_string()));
         }
+
+        if employee.last_login_at.is_none() {
+            return Err(AppError::Forbidden("First login detected, please use the link provided in your email.".to_string(), "FORBIDDEN_FIRST_LOGIN".to_string()));
+        }
         
         // get employee permissions
         let permissions = self.get_employee_permissions(employee.pk_employee_id).await?;

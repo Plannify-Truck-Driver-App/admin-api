@@ -4,9 +4,7 @@ use axum::{
 };
 
 use crate::{
-    employee::{
-        models::{Employee, GetAllEmployeesQuery},
-    }, errors::app_error::AppError, middleware::AppState, models::paginate::{PaginatedResponse, PAGINATE_MAX_LIMIT}
+    employee::models::{Employee, EmployeeCreateRequest, GetAllEmployeesQuery}, errors::app_error::AppError, middleware::{validate_request, AppState}, models::paginate::{PaginatedResponse, PAGINATE_MAX_LIMIT}
 };
 
 pub async fn get_all_employees(
@@ -31,4 +29,14 @@ pub async fn get_employee_by_id(
 ) -> Result<Json<Employee>, AppError> {
     let employee = app_state.employee_service.get_employee_by_id(&employee_id).await?;
     Ok(Json(employee))
+}
+
+pub async fn create_employee(
+    State(app_state): State<AppState>,
+    Json(new_employee): Json<EmployeeCreateRequest>,
+) -> Result<Json<Employee>, AppError> {
+    validate_request(&new_employee)?;
+
+    let created_employee = app_state.employee_service.create_employee(&new_employee).await?;
+    Ok(Json(created_employee))
 }
