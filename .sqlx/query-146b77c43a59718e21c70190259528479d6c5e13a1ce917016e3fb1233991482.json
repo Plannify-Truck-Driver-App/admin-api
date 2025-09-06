@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            INSERT INTO \"drivers\" (pk_driver_id, firstname, lastname, gender, email, password_hash, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at)\n            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())\n            RETURNING pk_driver_id, firstname, lastname, gender, email, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at, verified_at, last_login_at, deactivated_at\n            ",
+  "query": "\n            INSERT INTO \"drivers\" (firstname, lastname, gender, email, password_hash, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at)\n            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())\n            RETURNING pk_driver_id, firstname, lastname, gender, email, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at, verified_at, last_login_at, deactivated_at\n            ",
   "describe": {
     "columns": [
       {
@@ -81,7 +81,6 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
         "Varchar",
         "Varchar",
         "Varchar",
@@ -113,5 +112,5 @@
       true
     ]
   },
-  "hash": "891c4ee4b8cfca12f36778d57b3ca55ba9fa29adf416f133ef67994861b83788"
+  "hash": "146b77c43a59718e21c70190259528479d6c5e13a1ce917016e3fb1233991482"
 }
