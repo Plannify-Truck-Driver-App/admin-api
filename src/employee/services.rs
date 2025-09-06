@@ -1,4 +1,4 @@
-use argon2::{password_hash::{rand_core::OsRng, SaltString, PasswordHasher}, Argon2};
+use argon2::{password_hash::{rand_core::OsRng, PasswordHasher, SaltString}, Algorithm, Argon2, Params, Version};
 use chrono::{DateTime, Utc};
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -231,6 +231,22 @@ impl EmployeeService {
         .map_err(|_| AppError::NotFound("Employee not found".to_string(), "EMPLOYEE_NOT_FOUND".to_string()))
     }
 
+    fn to_title_case(name: &str) -> String {
+        name.trim().split(|c: char| c.is_whitespace() || c == '-')
+            .map(|word| {
+                if word.is_empty() {
+                    return String::new();
+                }
+                let mut chars = word.chars();
+                match chars.next() {
+                    None => String::new(),
+                    Some(first) => first.to_uppercase().collect::<String>() + chars.as_str().to_lowercase().as_str(),
+                }
+            })
+            .collect::<Vec<String>>()
+            .join("-")
+    }
+
     pub async fn create_employee(&self, employee_data: &EmployeeCreateRequest) -> Result<Employee, AppError> {
         // check if the professional email already exists
         let existing = sqlx::query!(
@@ -245,7 +261,9 @@ impl EmployeeService {
         }
 
         let salt = SaltString::generate(&mut OsRng);
-        let argon2 = Argon2::default();
+        let params = Params::new(19 * 1024, 2, 1, None)
+            .map_err(|_| AppError::Internal("An error occurred while creating Argon2 parameters".to_string()))?; // 19 MiB, 2 itérations, 1 thread
+        let argon2 = Argon2::new(Algorithm::Argon2id, Version::V0x13, params);
 
         let password_hash = argon2.hash_password(employee_data.login_password.as_bytes(), &salt)
             .map_err(|_| AppError::Internal("An error occurred while hashing the password".to_string()))
@@ -264,13 +282,13 @@ impl EmployeeService {
                 login_password_hash, phone_number, professional_email,
                 professional_email_password, created_at, last_login_at, deactivated_at
             "#,
-            employee_data.firstname,
-            employee_data.lastname,
+            Self::to_title_case(&employee_data.firstname),
+            Self::to_title_case(&employee_data.lastname),
             employee_data.gender,
-            employee_data.personal_email,
+            employee_data.personal_email.to_lowercase(),
             password_hash,
             employee_data.phone_number,
-            employee_data.professional_email,
+            employee_data.professional_email.to_lowercase(),
             employee_data.professional_email_password
         )
         .fetch_one(&self.pool)

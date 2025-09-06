@@ -60,7 +60,7 @@ impl AuthService {
             FROM employees 
             WHERE professional_email = $1 AND deactivated_at IS NULL
             "#,
-            login.professional_email
+            login.professional_email.to_lowercase()
         )
         .fetch_optional(&self.pool)
         .await?

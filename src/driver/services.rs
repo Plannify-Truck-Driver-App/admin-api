@@ -242,9 +242,28 @@ impl DriverService {
         }
     }
 
+    fn to_title_case(name: &str) -> String {
+        name.trim().split(|c: char| c.is_whitespace() || c == '-')
+            .map(|word| {
+                if word.is_empty() {
+                    return String::new();
+                }
+                let mut chars = word.chars();
+                match chars.next() {
+                    None => String::new(),
+                    Some(first) => first.to_uppercase().collect::<String>() + chars.as_str().to_lowercase().as_str(),
+                }
+            })
+            .collect::<Vec<String>>()
+            .join("-")
+    }
+
     // Create a new user
     pub async fn create_driver(&self, create_req: &CreateDriverRequest) -> Result<Driver, AppError> {
-        let driver_id = Uuid::new_v4();
+        let driver_exists = self.email_exists(&create_req.email).await?;
+        if driver_exists {
+            return Err(AppError::Conflict("A driver with this email already exists".to_string(), "DRIVER_EMAIL_ALREADY_EXISTS".to_string()));
+        }
 
         let salt = SaltString::generate(&mut OsRng);
         let params = Params::new(19 * 1024, 2, 1, None)
@@ -258,15 +277,14 @@ impl DriverService {
         let driver = sqlx::query_as!(
             Driver,
             r#"
-            INSERT INTO "drivers" (pk_driver_id, firstname, lastname, gender, email, password_hash, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, NOW())
+            INSERT INTO "drivers" (firstname, lastname, gender, email, password_hash, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
             RETURNING pk_driver_id, firstname, lastname, gender, email, phone_number, is_searchable, allow_request_professional_agreement, language, rest_json, mail_preferences, created_at, verified_at, last_login_at, deactivated_at
             "#,
-            driver_id,
-            create_req.firstname,
-            create_req.lastname,
+            Self::to_title_case(&create_req.firstname),
+            Self::to_title_case(&create_req.lastname),
             create_req.gender,
-            create_req.email,
+            create_req.email.to_lowercase(),
             password_hash,
             create_req.phone_number,
             create_req.is_searchable,
@@ -285,13 +303,13 @@ impl DriverService {
     pub async fn update_driver(&self, driver_id: &Uuid, update_req: &UpdateDriverRequest) -> Result<Driver, AppError> {
         // Use a simple approach with separate queries for each field
         if let Some(ref firstname) = update_req.firstname {
-            sqlx::query!("UPDATE \"drivers\" SET firstname = $1 WHERE pk_driver_id = $2", firstname, driver_id)
+            sqlx::query!("UPDATE \"drivers\" SET firstname = $1 WHERE pk_driver_id = $2", Self::to_title_case(firstname), driver_id)
                 .execute(&self.pool)
                 .await?;
         }
 
         if let Some(ref lastname) = update_req.lastname {
-            sqlx::query!("UPDATE \"drivers\" SET lastname = $1 WHERE pk_driver_id = $2", lastname, driver_id)
+            sqlx::query!("UPDATE \"drivers\" SET lastname = $1 WHERE pk_driver_id = $2", Self::to_title_case(lastname), driver_id)
                 .execute(&self.pool)
                 .await?;
         }
@@ -303,7 +321,7 @@ impl DriverService {
         }
 
         if let Some(ref email) = update_req.email {
-            sqlx::query!("UPDATE \"drivers\" SET email = $1 WHERE pk_driver_id = $2", email, driver_id)
+            sqlx::query!("UPDATE \"drivers\" SET email = $1 WHERE pk_driver_id = $2", email.to_lowercase(), driver_id)
                 .execute(&self.pool)
                 .await?;
         }
@@ -346,18 +364,6 @@ impl DriverService {
 
         if let Some(verified_at) = update_req.verified_at {
             sqlx::query!("UPDATE \"drivers\" SET verified_at = $1 WHERE pk_driver_id = $2", verified_at, driver_id)
-                .execute(&self.pool)
-                .await?;
-        }
-
-        if let Some(last_login_at) = update_req.last_login_at {
-            sqlx::query!("UPDATE \"drivers\" SET last_login_at = $1 WHERE pk_driver_id = $2", last_login_at, driver_id)
-                .execute(&self.pool)
-                .await?;
-        }
-
-        if let Some(deactivated_at) = update_req.deactivated_at {
-            sqlx::query!("UPDATE \"drivers\" SET deactivated_at = $1 WHERE pk_driver_id = $2", deactivated_at, driver_id)
                 .execute(&self.pool)
                 .await?;
         }

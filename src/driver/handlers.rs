@@ -64,11 +64,6 @@ pub async fn create_driver(
     debug!("Create driver request: {:?}", create_req);
     
     validate_request(&create_req).map_err(|e| AppError::Validation(e.to_string()))?;
-    
-    // check if the email already exists
-    if app_state.driver_service.email_exists(&create_req.email).await? {
-        return Err(AppError::Conflict("A driver with this email already exists".to_string(), "DRIVER_EMAIL_ALREADY_EXISTS".to_string()));
-    }
 
     let created_driver = app_state.driver_service.create_driver(&create_req).await?;
 

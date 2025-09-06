@@ -62,7 +62,7 @@ pub struct UpdateDriverRequest {
     #[validate(length(min = 1, max = 255, message = "Lastname cannot be empty and cannot be longer than 255 characters"))]
     pub lastname: Option<String>,
     
-    #[validate(length(equal = 1, message = "Gender must be 'M', 'F' or 'O'"))]
+    #[validate(length(equal = 1, message = "Gender must be 'M', 'F' or null"))]
     pub gender: Option<String>,
     
     #[validate(email(message = "Invalid email format"))]
@@ -84,8 +84,6 @@ pub struct UpdateDriverRequest {
     pub mail_preferences: Option<i32>,
     
     pub verified_at: Option<DateTime<Utc>>,
-    pub last_login_at: Option<DateTime<Utc>>,
-    pub deactivated_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Deserialize)]
